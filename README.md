@@ -32,59 +32,44 @@ The audit discovers your project structure dynamically, reads everything, querie
 ## How it works
 
 ### Phase 1: Discover
-Maps the project structure dynamically. No assumptions about folder names, frameworks, or conventions. Checks git history, reads the stated project goal, and confirms scope with you before proceeding.
+Looks at the project before assuming anything. Maps the structure, checks git history, reads the README, then asks you to confirm scope before burning tokens.
 
 ### Phase 2: Read (parallel)
-Dispatches 4 parallel agents to read everything simultaneously:
-- Agent 1: Architecture and configuration
-- Agent 2: Execution logic and coordination
-- Agent 3: Outputs, docs and reviews
-- Agent 4: Data, infrastructure and supporting files
+Sends 4 agents to read everything at once. One covers config and architecture, one covers execution logic, one reads outputs and docs, one counts files and checks data stores.
 
 ### Phase 3: Diagnose
-Connects to databases (SQL, NoSQL, or embedded), queries operational metrics, checks agent/worker reliability, and identifies data freshness issues.
+If there's a database, it connects and queries it. Checks table sizes, failure rates, data freshness. If there's no database, it skips this.
 
 ### Phase 4: Analyze
-Produces the structured quality analysis: architecture review, error handling audit, performance bottleneck identification, and resource waste quantification.
+This is where the actual opinions come in. Architecture review, error handling audit, performance analysis, resource waste. Everything quantified where possible.
 
 ### Phase 5: Assess
-Security scan, PII detection, documentation quality check, goal fulfillment comparison, production readiness assessment, and the ranked recommendations.
+Security scan, PII check, documentation accuracy, whether the project actually does what it claims to do. Ends with the ranked recommendations and the uncomfortable question.
 
 ### Phase 6: Test resilience
-Validates backups actually restore (not just that they exist), traces failure modes, and assesses operational resilience.
+Checks whether backups actually restore (not just whether they exist). Traces what happens when components fail.
 
-## What happens after the audit
+## What happens after
 
-The report is designed to be actionable immediately. You can say:
+The report is built so you can act on it immediately. You can say:
 
 ```
 Fix them all
 ```
 
-And the audit findings become the implementation plan.
-
-For larger projects, you can also:
-- Pick specific recommendations to implement first
-- Ask for a deeper dive into any section ("expand on the security findings")
-- Schedule a follow-up audit after fixes to verify improvement
-- Run partial re-audits on specific phases ("just re-run Phase 5 on security")
+and it becomes the implementation plan. Or pick specific items, ask for more detail on a section, or re-run just one phase after you've made changes.
 
 ## Installation
 
 ### Claude Code (CLI or Desktop)
 
-Copy the skill to your skills directory:
-
 ```bash
-# Clone the repo
 git clone https://github.com/belousov-petr/deep-project-audit.git
-
-# Copy to Claude Code skills directory
 mkdir -p ~/.claude/skills/deep-project-audit
 cp deep-project-audit/SKILL.md ~/.claude/skills/deep-project-audit/SKILL.md
 ```
 
-Or download directly:
+Or grab just the skill file:
 
 ```bash
 mkdir -p ~/.claude/skills/deep-project-audit
@@ -92,115 +77,92 @@ curl -o ~/.claude/skills/deep-project-audit/SKILL.md \
   https://raw.githubusercontent.com/belousov-petr/deep-project-audit/main/SKILL.md
 ```
 
-Restart Claude Code. The skill appears as `/deep-project-audit`.
+Restart Claude Code. It shows up as `/deep-project-audit`.
 
-### Verify installation
+### Check it works
 
 ```
 > /deep-project-audit
 ```
 
-You should see Claude begin Phase 1: discovering your project structure.
+You should see it start mapping your project structure.
 
 ## Usage
 
-### Basic
+Go to your project directory and run `/deep-project-audit`. Or just say "audit this project" or "find the weak spots" in natural language.
 
-Navigate to your project directory and run:
+### The report covers
 
-```
-/deep-project-audit
-```
-
-Or use natural language:
-
-```
-Audit this project
-How solid is this project?
-Find the weak spots
-Stress-test this codebase
-```
-
-### What you get
-
-A structured markdown report with:
-
-1. Project summary -- what it is, derived from what was read
-2. Strengths -- what's genuinely good, with evidence
-3. Critical issues -- what will break soon, with evidence
-4. Architecture review -- structural problems, MECE gaps, contradictions
-5. Error handling audit -- crash paths, silent failures, edge cases
-6. Performance analysis -- bottlenecks, waste, cost
-7. Security scan -- secrets, injection risks, PII exposure
-8. Observability check -- logging, monitoring, alerting
-9. Documentation review -- accuracy, completeness, onboarding
-10. Goal fulfillment -- stated vs actual behavior
-11. Blind spots -- what nobody is watching
-12. Ratings table -- 8 dimensions scored 1-10
-13. Overall rating -- X/10 with justification
-14. Production readiness -- 10-gate PASS/PARTIAL/FAIL with ship verdict
-15. Top 10 recommendations -- ranked by impact with effort estimates
-16. The uncomfortable question -- the one thing you need to hear
+1. What the project is (derived from reading, not assumed)
+2. What's genuinely good, with evidence
+3. What will break soon, with evidence
+4. Architecture problems, MECE gaps, contradictions
+5. Error handling: crash paths, silent failures, edge cases
+6. Performance: bottlenecks, waste, cost
+7. Security: secrets, injection risks, PII
+8. Logging and monitoring gaps
+9. Documentation: accuracy, completeness, onboarding
+10. Goal fulfillment: stated vs actual behavior
+11. Blind spots nobody is watching
+12. Ratings (8 dimensions, scored 1-10)
+13. Overall score with justification
+14. Production readiness (10 gates, ship/no-ship verdict)
+15. Top 10 ranked fixes with effort estimates
+16. The uncomfortable question
 
 ## Works on
 
-| Project type | What gets analyzed |
+| Project type | What gets checked |
 |---|---|
-| Multi-agent systems (Paperclip, CrewAI, AutoGen) | Agent instructions, heartbeats, coordination, pipeline flow, signal quality |
-| Web applications | Routes, API design, auth, DB schema, frontend/backend separation |
+| Agent systems (Paperclip, CrewAI, AutoGen) | Instructions, heartbeats, coordination, pipeline flow, signal quality |
+| Web apps | Routes, API design, auth, DB schema, frontend/backend split |
 | Data pipelines | Stage flow, data integrity, scheduling, error handling, throughput |
-| CLI tools | Argument handling, error messages, edge cases, documentation |
-| Monorepos | Package boundaries, dependency management, build system, cross-package consistency |
-| Microservices | Service boundaries, API contracts, resilience patterns, observability |
+| CLI tools | Argument handling, error messages, edge cases, docs |
+| Monorepos | Package boundaries, dependencies, build system, cross-package consistency |
+| Microservices | Service boundaries, API contracts, resilience, observability |
 
 ## How it thinks
 
-The audit follows a few rules I keep coming back to when reviewing my own projects:
+A few rules I keep coming back to when reviewing my own projects:
 
-1. Look at the project before making assumptions about it. Map the structure first, read second.
-2. Check with the user before going deep. A quick "this is what I found, this is what I'll audit -- sound right?" saves everyone's time.
-3. Don't critique what you haven't read. Opinions come after evidence.
-4. Put numbers on things. "23% duplicate rate" tells you something. "There are some duplicates" doesn't.
-5. Compare what the docs promise against what the code actually does. The gap between those two is where most problems hide.
-6. Every recommendation has to answer four things: what to fix, why it matters, how much work it is, and who should do it. Anything less is just complaining.
-7. The audit should be useful right now, not next sprint. If you can say "fix them all" and start implementing in the same session, the audit did its job.
-8. Actually test the safety nets. Backups exist? Restore one. Retry logic? Trace what happens when it fires. Don't report that mechanisms exist -- report whether they work.
+1. Look at the project before making assumptions about it. Map first, read second.
+2. Check with the user before going deep. "This is what I found, this is what I'll audit -- sound right?" saves everyone's time.
+3. Don't critique what you haven't read.
+4. Put numbers on things. "23% duplicate rate" is useful. "Some duplicates" is not.
+5. Compare what the docs say against what the code does. The gap between those two is where most problems hide.
+6. Every recommendation answers four things: what, why, how much work, who does it. Anything less is just complaining.
+7. The audit should be useful now, not next sprint. If you can say "fix them all" and start working immediately, it did its job.
+8. Test the safety nets. Backups exist? Restore one. Retry logic? Trace what happens when it fires. Don't report that something exists -- report whether it works.
 9. Find what's wrong, not just what's right. The point is to make the project better, not to feel good about it.
-10. Surface the constraints nobody talks about -- subscription limits, rate limit windows, daily budgets, peak hour pricing. These shape what's actually possible more than architecture does.
+10. Surface the constraints nobody talks about: rate limits, daily budgets, peak hour pricing. Those shape what's actually possible more than architecture does.
 
 ## Why this exists
 
-I was working on a 12-agent intelligence pipeline and every time I wanted to review the whole thing properly, I'd write out a long prompt from scratch. And every time, there'd be that one check I only remembered after the review was done. Sometimes it was security. Sometimes backup validation. Sometimes I'd just forget to look at how the agents actually coordinate with each other.
+I was running a 12-agent intelligence pipeline and every time I wanted to review the whole thing, I'd write a long audit prompt from scratch. Every time, I'd forget something. Sometimes security. Sometimes backup validation. Sometimes I just wouldn't look at how the agents coordinate with each other.
 
 It's never the obvious stuff. It's always the thing you assumed was fine until it wasn't.
 
-So I made this into a skill. Same checklist, same sequence, every time. Now I run one command and know I'm not skipping anything. It also turned up things I wasn't even looking for, which was the part that surprised me. After running it on a few different projects I figured other people might get something out of it too.
+So I made it into a skill. Same checklist, same order, every time. Now I run one command and know I'm not skipping anything. It also finds things I wasn't looking for, which surprised me. After using it on a few projects I figured other people might find it useful too.
 
 ## What it costs
 
-A typical audit consumes **100K-300K tokens** (input + output across all 6 phases),
-depending on project size. A large multi-agent system with 600+ files and a database
-runs ~250K tokens. A small CLI tool with 20 files runs ~50K tokens. See
-[`examples/sample-audit.md`](examples/sample-audit.md) for a full anonymized example
-from a real 16-agent intelligence pipeline.
+A typical audit uses 100K-300K tokens across all 6 phases. A big agent system with 600+ files and a database runs about 250K. A small CLI tool with 20 files runs about 50K. See [`examples/sample-audit.md`](examples/sample-audit.md) for an anonymized example from a real project.
 
 ## Contributing
 
-If you've run this audit and found gaps, I'd like to hear about it. Open an issue or PR with:
+If you've run this and found gaps, I'd like to hear about it. Open an issue or PR with:
 
-1. What kind of project you were auditing
-2. What analysis you think the skill should have covered but didn't
-3. What test or criteria you'd add to fill that gap
+1. What kind of project you audited
+2. What the skill should have checked but didn't
+3. What you'd add to fill that gap
 
 ## License
 
-This work is licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
-
-You are free to use, share, and adapt this methodology for any purpose, including commercially, as long as you give appropriate credit.
+[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Use it, share it, adapt it for anything including commercial work. Just give credit.
 
 ## Author
 
-**Petr Belousov** -- AI governance by day, AI builder by night.
+Petr Belousov
 
 - GitHub: [@belousov-petr](https://github.com/belousov-petr)
 - LinkedIn: [petrbelousov](https://www.linkedin.com/in/petrbelousov/)
