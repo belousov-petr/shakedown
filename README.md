@@ -1,12 +1,12 @@
 # Deep Project Audit
 
-One command audits your entire project -- architecture, security, performance, resilience, documentation -- and tells you exactly what to fix, in what order, and who should do it.
+Run one command, get a full audit. Architecture, security, performance, resilience, docs -- what's broken, what to fix first, and whether you or your agents can handle it.
 
-> Works on anything with files to read and assumptions to challenge: multi-agent systems, data pipelines, web apps, CLIs, microservices, infrastructure.
+> Works on anything you can point it at: agent systems, pipelines, web apps, CLIs, microservices, infra.
 
-Built as a [Claude Code Skill](https://code.claude.com/docs/en/skills) that runs a structured 6-phase analysis, producing a ranked report with actionable recommendations.
+It's a [Claude Code Skill](https://code.claude.com/docs/en/skills) -- six phases, one report, fixes ranked by impact.
 
-Born from auditing a 12-agent AI intelligence pipeline on [Paperclip](https://github.com/paperclipai/paperclip), refined into a project-agnostic framework.
+I made this because I kept writing the same audit prompt from scratch every time I wanted to properly review a project. Started with a 12-agent pipeline on [Paperclip](https://github.com/paperclipai/paperclip), turned it into something that works on any project.
 
 ![Deep Project Audit](deep-project-audit.png)
 
