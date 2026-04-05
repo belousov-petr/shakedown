@@ -144,7 +144,7 @@ It's never the obvious stuff. It's always the thing you assumed was fine until i
 
 So I made it into a skill. Same checklist, same order, every time. Now I run one command and know I'm not skipping anything. It also finds things I wasn't looking for, which surprised me. After using it on a few projects I figured other people might find it useful too.
 
-## What it costs
+## Token usage
 
 A typical audit uses 100K-300K tokens across all 6 phases. A big agent system with 600+ files and a database runs about 250K. A small CLI tool with 20 files runs about 50K. See [`examples/sample-audit.md`](examples/sample-audit.md) for an anonymized example from a real project.
 
