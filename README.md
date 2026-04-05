@@ -1,8 +1,14 @@
 # Deep Project Audit
 
-A reusable audit methodology for any software project -- multi-agent systems, data pipelines, web applications, CLI tools, or microservices. Built as a [Claude Code Skill](https://code.claude.com/docs/en/skills) that runs a structured 6-phase analysis, producing a ranked report with actionable recommendations.
+One command audits your entire project -- architecture, security, performance, resilience, documentation -- and tells you exactly what to fix, in what order, and who should do it.
+
+> Works on anything with files to read and assumptions to challenge: multi-agent systems, data pipelines, web apps, CLIs, microservices, infrastructure.
+
+Built as a [Claude Code Skill](https://code.claude.com/docs/en/skills) that runs a structured 6-phase analysis, producing a ranked report with actionable recommendations.
 
 Born from auditing a 12-agent AI intelligence pipeline on [Paperclip](https://github.com/paperclipai/paperclip), refined into a project-agnostic framework.
+
+![Deep Project Audit](deep-project-audit.png)
 
 ## What it does
 
