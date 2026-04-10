@@ -118,8 +118,6 @@ It also activates from natural language:
 | `due diligence on this codebase` | Full audit, emphasis on risks and gaps |
 | `assess technical debt` | Full audit, emphasis on architecture and code quality |
 | `gap analysis` | Full audit, emphasis on blind spots |
-| `does this solve a real problem` | Full audit, emphasis on value assessment |
-| `who is this for` | Full audit, emphasis on audience and adoption readiness |
 
 ### The report covers
 
@@ -142,6 +140,25 @@ It also activates from natural language:
 17. Top 10 ranked fixes with effort estimates
 18. Value assessment: problem clarity, audience, maturity, differentiation
 19. The uncomfortable question
+
+### Focused checks (without running the full audit)
+
+The reference files in `references/` are self-contained checklists. You can use them individually for targeted reviews without running the full 6-phase audit. Just point your agent at the specific file:
+
+| If you want to check... | Use this file |
+|---|---|
+| Architecture, MECE gaps, algorithms, test coverage | `references/architecture-quality.md` |
+| Error handling, crash paths, resilience | `references/error-resilience.md` |
+| Performance, bottlenecks, scaling, cost | `references/performance-analysis.md` |
+| File waste, duplicates, dead dependencies | `references/storage-efficiency.md` |
+| Agent skill spec compliance | `references/skill-standards.md` |
+| Security, secrets, injection, PII, licensing | `references/security-checklist.md` |
+| Logging, docs quality, blind spots | `references/operational-health.md` |
+| Problem clarity, audience, maturity, value | `references/value-assessment.md` |
+| Database health, schema, freshness | `references/db-diagnostics.md` |
+| Backup validation, disaster recovery | `references/resilience-testing.md` |
+
+Example: "Review this project's security using the checklist in `references/security-checklist.md`"
 
 ## What to do with the report
 

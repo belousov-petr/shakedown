@@ -9,7 +9,7 @@ description: >-
   stress-test, due diligence, gap analysis, or challenge any project, assess
   technical debt, or when user asks 'how solid is this project', 'what is missing',
   'find the weak spots', 'is this production ready', 'what's wrong with this',
-  'how mature is this', 'does this solve a real problem', or 'who is this for'.
+  or 'how mature is this'.
 license: CC-BY-4.0
 compatibility: >-
   Requires Claude Code or similar agent with file-read, shell execution,
