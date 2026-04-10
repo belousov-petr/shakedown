@@ -97,3 +97,5 @@ After grading, analyze patterns:
 | 3 | large-agent-system | 8 | Parallel reads, sampling, agent coordination analysis |
 | 4 | outdated-docs-project | 6 | Stated-vs-actual detection, doc discrepancy flagging |
 | 5 | no-tests-production-claim | 6 | Production readiness gating on test coverage |
+| 6 | agent-skill-project | 9 | Skill detection, spec compliance, description/instruction quality, value assessment |
+| 7 | bloated-storage-project | 7 | Storage waste detection, quantified findings, gitignore gaps |

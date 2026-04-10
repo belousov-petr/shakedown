@@ -14,7 +14,11 @@ Detailed checks for Section 4.6. Quantify everything possible.
 - Are there lock contention or race condition risks?
 - Could throughput increase with more parallelism?
 
-## Scaling
+## Scaling (Quantitative)
+
+**Scope:** Measured/estimated performance at scale — timing, resource
+consumption, cost growth. For structural scaling limits (architecture,
+coupling), see `architecture-quality.md` (Section 4.4).
 
 - What happens at 2x, 10x, 100x current data volume?
 - Are there O(n^2) operations hiding in loops?

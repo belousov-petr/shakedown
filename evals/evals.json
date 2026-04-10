@@ -296,6 +296,138 @@
           "description": "Output contains a non-empty uncomfortable question"
         }
       ]
+    },
+    {
+      "id": 6,
+      "name": "agent-skill-project",
+      "description": "An agent skill (Claude Code, Copilot, or similar) with SKILL.md, references, scripts, and evals. Tests that the skill detects the project as an agent skill and evaluates it against agentskills.io specification and best practices.",
+      "project_characteristics": {
+        "type": "Agent skill",
+        "files": "~10-30",
+        "languages": ["Markdown", "Python", "YAML"],
+        "database": false,
+        "tests": "evals framework",
+        "docs": "README + SKILL.md + references",
+        "key_files": ["SKILL.md", "evals/evals.json", "scripts/", "references/"]
+      },
+      "prompt": "Audit this project — find what's broken and what to fix first.",
+      "expected_behavior": "Skill should detect SKILL.md in Phase 1 and trigger section 4.8 (Agent Skill Standards Compliance). Should evaluate frontmatter conformance, description quality, instruction quality, script standards, eval framework, and progressive disclosure against the agentskills.io spec. Should also assess value proposition, storage efficiency, and not skip these sections just because the project is small.",
+      "assertions": [
+        {
+          "id": "6.1",
+          "check": "skill_detection",
+          "target": "Phase 1",
+          "description": "Phase 1 identifies the project as an agent skill based on SKILL.md presence"
+        },
+        {
+          "id": "6.2",
+          "check": "contains_table",
+          "target": "Skill Standards Compliance",
+          "description": "Output contains a skill standards compliance table with PASS/PARTIAL/FAIL ratings for spec conformance, description quality, instruction quality, eval framework, and progressive disclosure"
+        },
+        {
+          "id": "6.3",
+          "check": "spec_validation",
+          "target": "Frontmatter",
+          "description": "Output validates YAML frontmatter fields (name format, description length, required vs optional fields) against the agentskills.io specification"
+        },
+        {
+          "id": "6.4",
+          "check": "description_quality",
+          "target": "Description",
+          "description": "Output evaluates the skill description for imperative phrasing, trigger coverage, user intent focus, and character limit compliance"
+        },
+        {
+          "id": "6.5",
+          "check": "instruction_quality",
+          "target": "Instructions",
+          "description": "Output evaluates instruction quality: grounded in expertise (not generic), appropriate scope, gotchas section, output templates"
+        },
+        {
+          "id": "6.6",
+          "check": "contains_section",
+          "target": "Value Assessment",
+          "description": "Output contains a Value Assessment section evaluating problem clarity, target audience, maturity, and differentiation"
+        },
+        {
+          "id": "6.7",
+          "check": "contains_table",
+          "target": "Value Assessment",
+          "description": "Output contains a value assessment table with ratings and evidence for at least 4 dimensions"
+        },
+        {
+          "id": "6.8",
+          "check": "contains_section",
+          "target": "Storage Efficiency",
+          "description": "Output contains a storage efficiency section checking for empty files, duplicates, dead dependencies, and bloat"
+        },
+        {
+          "id": "6.9",
+          "check": "contains_section",
+          "target": "The Uncomfortable Question",
+          "description": "Output contains a non-empty uncomfortable question"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "name": "bloated-storage-project",
+      "description": "Project with significant storage waste: empty placeholder files, duplicate configs, build artifacts committed to git, dead dependencies, large binaries. Tests that the skill detects and quantifies storage inefficiency.",
+      "project_characteristics": {
+        "type": "Any (web app, CLI, library)",
+        "files": "~100-300",
+        "languages": ["Any"],
+        "database": "optional",
+        "tests": "some",
+        "docs": "README",
+        "storage_issues": ["0-byte files", "duplicate configs", "committed node_modules or __pycache__", "unused dependencies", "large binaries in repo"]
+      },
+      "prompt": "Audit this project — find what's broken and what to fix first.",
+      "expected_behavior": "Skill should detect and quantify storage waste: count empty files, identify duplicates with byte estimates, flag committed build artifacts, list dead dependencies, and check .gitignore completeness. Storage efficiency should appear in recommendations.",
+      "assertions": [
+        {
+          "id": "7.1",
+          "check": "contains_section",
+          "target": "Storage Efficiency",
+          "description": "Output contains a dedicated storage efficiency section with quantified findings"
+        },
+        {
+          "id": "7.2",
+          "check": "quantified_waste",
+          "target": "Empty files",
+          "description": "Output counts empty (0-byte) files with a specific number, not just 'some empty files'"
+        },
+        {
+          "id": "7.3",
+          "check": "quantified_waste",
+          "target": "Duplicate files",
+          "description": "Output identifies duplicate file groups with byte/count estimates"
+        },
+        {
+          "id": "7.4",
+          "check": "flags_gap",
+          "target": "gitignore",
+          "description": "Output flags .gitignore gaps (committed build artifacts, cache files, or OS metadata)"
+        },
+        {
+          "id": "7.5",
+          "check": "recommendation_priority",
+          "target": "Storage cleanup",
+          "description": "Storage cleanup appears in the Top 10 recommendations"
+        },
+        {
+          "id": "7.6",
+          "check": "contains_section",
+          "target": "Value Assessment",
+          "description": "Output contains a Value Assessment section"
+        },
+        {
+          "id": "7.7",
+          "check": "contains_section",
+          "target": "The Uncomfortable Question",
+          "description": "Output contains a non-empty uncomfortable question"
+        }
+      ]
     }
   ],
   "grading": {

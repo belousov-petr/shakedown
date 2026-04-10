@@ -56,6 +56,15 @@ Check for framework indicators by looking for common config files:
 Check for agent/pipeline platforms by looking for platform-specific
 directories (`.paperclip`, `.crew`, `.autogen`, `.langchain`, etc.)
 
+Check for **agent skill indicators**:
+- `SKILL.md` in the project root → this project IS an agent skill
+- `.agents/skills/` directory → project contains or uses skills
+- Skill-like YAML frontmatter (`name:`, `description:` fields)
+- References to skill platforms (Claude Code, Copilot, Gemini CLI, Codex)
+
+If agent skill detected, set a flag. This triggers section 4.8 (Agent
+Skill Standards Compliance) during Phase 4.
+
 Check for running databases by listing active network listeners on
 common database ports (5432, 3306, 27017, 6379).
 
@@ -139,19 +148,11 @@ abort — adjust the scope and re-confirm.
 ## Phase 2: Full Content Read (Parallel)
 
 Dispatch **4 parallel agents**, each reading one slice of the project.
-Adapt the slices to whatever Phase 1 discovered.
+Adapt slices to whatever Phase 1 discovered.
 
-**If parallel agents are not available** (no subagent support): run
-the 4 slices sequentially in this order: Architecture & Configuration,
-Execution Logic, Outputs & Docs, Data & Infrastructure. The audit
-will take longer but produces the same output.
-
-**If project has >1000 files**: sample instead of reading everything.
-Read representative files from each directory (2-3 per folder), count
-the rest, and note which areas were sampled vs fully read.
-
-**If a parallel agent fails**: continue with the remaining agents.
-Note the gap in the final report and flag what was not covered.
+**Fallbacks**: If no subagent support, run slices sequentially. If
+>1000 files, sample 2-3 per directory and count the rest. If an agent
+fails, continue with the rest and note the gap.
 
 ### Agent 1: Architecture & Configuration
 Read all configuration and architectural files:
@@ -224,67 +225,24 @@ Things that will cause failures soon. Must include evidence:
 
 ### 4.4 Architecture & Code Quality
 
-**Structural analysis:**
-- Storage model trade-offs (file vs DB, consistency, queryability)
-- Sequential bottlenecks and idle time
-- Schema/contract inconsistencies between components
-- Missing infrastructure (monitoring, alerting, retry, graceful degradation)
-- Single points of failure
-- Scalability limits — what breaks at 2x, 10x, 100x current load?
+Evaluate structural analysis, design pattern coherence (MECE check,
+contradictions), algorithm efficiency, code quality (dead code,
+complexity hotspots, naming), dependency graph, and test coverage.
 
-**Design patterns & coherence:**
-- Are design patterns consistent across the codebase?
-- MECE check: are responsibilities mutually exclusive and collectively
-  exhaustive? Look for overlapping ownership and gaps.
-- Contradictions: do any instructions, configs, or code paths contradict
-  each other?
-
-**Code quality (if source code exists):**
-- File sizes — any files > 500 lines that should be split?
-- Dead code, commented-out blocks, unaddressed TODOs
-- Naming consistency across the codebase
-- Complexity hotspots (deeply nested logic, long functions)
-
-**Test coverage:**
-- Do tests exist? What kind (unit, integration, e2e)?
-- What's the coverage? Are critical paths tested?
-- If no tests: flag as critical gap for production readiness
+See [Architecture & Code Quality](references/architecture-quality.md)
+for the full checklist. Key outputs: biggest structural risk, MECE gaps,
+test coverage assessment, and complexity hotspots.
 
 ### 4.5 Error Handling, Resilience & Failure Modes
 
-Trace actual behavior for each — don't just note that mechanisms exist.
+Trace actual behavior — don't just note that mechanisms exist. Cover
+crash scenarios, timeout coverage, silent failures, data integrity,
+edge cases, system-level failure modes, retry patterns, and graceful
+degradation.
 
-**Crash scenarios:**
-- What happens when each component fails? Trace the failure path.
-- Are there try/catch blocks, error boundaries, or crash handlers?
-- Do errors propagate silently or get surfaced?
-
-**Timeout coverage:**
-- Are there timeouts on external calls (APIs, DB queries, web fetches)?
-- What happens when a timeout fires? Retry? Fail? Hang?
-
-**Silent failures:**
-- Search for bare `except:` / `catch {}` blocks that swallow errors
-- Check if scheduled jobs log failures or fail silently
-- Are there any "fire and forget" operations with no confirmation?
-
-**Data integrity:**
-- Can a crash mid-write corrupt data? (atomic writes, transactions)
-- Are there orphaned records, dangling references, or stale state?
-- Is there validation at system boundaries?
-
-**Edge cases:**
-- What happens with empty input, null values, malformed data?
-- What happens at boundary conditions (0 items, max items, duplicates)?
-- What happens with concurrent access (two agents writing same file)?
-
-**System-level failure modes:**
-- What happens if the primary data store goes down?
-- What happens if an external API/service is unavailable?
-- What happens if a scheduled job fails silently?
-- What's the maximum data loss window?
-- What's the recovery time objective?
-- Has any of this been tested?
+See [Error Handling & Resilience](references/error-resilience.md)
+for the full checklist. Key outputs: failure paths traced, silent
+failure inventory, data loss window, and recovery readiness.
 
 ### 4.6 Performance & Bottleneck Analysis
 
@@ -294,6 +252,29 @@ cost analysis, and optimization opportunities.
 
 Summarize key findings here: biggest bottleneck, biggest waste, estimated
 cost, and top 3 optimization opportunities with expected impact.
+
+### 4.7 Code & Storage Efficiency
+
+Assess how lean the project's file footprint is. Check for: empty
+(0-byte) files, duplicate files across directories, build artifacts or
+temp files committed to git, copy-pasted code blocks, dead dependencies
+(declared but unused), and storage bloat (large binaries, oversized logs).
+
+See [Storage Efficiency](references/storage-efficiency.md) for the full
+checklist with commands. Quantify: total waste in file count and bytes.
+
+### 4.8 Agent Skill Standards Compliance
+
+**Conditional — only run if Phase 1 detected this project is an agent skill.**
+If not a skill, note "Not an agent skill — section skipped."
+
+Evaluate against the Agent Skills specification (agentskills.io) and
+platform best practices. See [Skill Standards](references/skill-standards.md)
+for the full compliance checklist.
+
+Summarize as: spec conformance, description quality, instruction quality,
+script quality, eval framework, and progressive disclosure — each rated
+PASS / PARTIAL / FAIL with specific issues noted.
 
 ---
 
@@ -310,28 +291,27 @@ PII handling issues, dependency vulnerabilities.
 
 ### 5.2 Logging & Observability
 
-- Do logs exist? Where are they written?
-- Are logs structured (JSON with fields) or unstructured (free text)?
-- Can you trace a request/signal end-to-end through the system?
-- Is there log rotation? Are old logs purged or do they grow forever?
-- Are errors logged with enough context to diagnose?
-- Is there any monitoring dashboard or alerting?
+Assess log existence, quality (structured vs free text), traceability
+(can you follow a request end-to-end?), lifecycle (rotation, retention),
+and monitoring/alerting.
+
+See [Operational Health](references/operational-health.md) for the full
+checklist.
 
 ### 5.3 Documentation Quality
 
-Compare documentation against the actual system:
-- **Accuracy**: does the README/docs describe what the system actually
-  does today, or a past/aspirational version?
-- **Completeness**: could someone else set up, operate, and troubleshoot
-  this system from the docs alone?
-- **Maintenance**: when was documentation last updated vs last code change?
-- **Onboarding**: is there a quickstart? Could a new team member get
-  productive in < 1 hour?
+Compare documentation against the actual system: accuracy (docs vs
+reality), completeness (could someone else operate this?), maintenance
+(when last updated?), and onboarding quality.
 
-Flag: any doc that describes features that don't exist, or omits features
-that do exist.
+See [Operational Health](references/operational-health.md) for the full
+checklist. Flag any doc that describes nonexistent features or omits
+existing ones.
 
 ### 5.4 Goal Fulfillment
+
+**Scope:** Technical comparison — does the code match the docs? For
+strategic assessment (should this exist?), see 5.10 Value Assessment.
 
 Compare the **stated objective** (captured in Phase 1d) against actual behavior:
 - Does the system do what it claims to do?
@@ -340,15 +320,17 @@ Compare the **stated objective** (captured in Phase 1d) against actual behavior:
 - Is the objective achievable with the current architecture?
 
 ### 5.5 Blind Spots
-What nobody is monitoring. Check for:
-- Human feedback loop (does anyone evaluate the output?)
-- Cost/resource tracking
-- SLA monitoring (are deadlines/targets met?)
-- Input health monitoring (are data sources reliable?)
-- Error alerting (do failures surface or stay silent?)
-- Graceful degradation (what happens when one component fails?)
+
+What nobody is monitoring: feedback loops, cost tracking, SLA adherence,
+input health, error visibility, graceful degradation, and drift/rot.
+
+See [Operational Health](references/operational-health.md) for the full
+checklist.
 
 ### 5.6 Objective Clarity Assessment
+
+**Scope:** Operational dimensions (does it work reliably?). For
+strategic dimensions (is it worth building?), see 5.10 Value Assessment.
 
 | Dimension | Rating (1-10) | Evidence |
 |-----------|---------------|----------|
@@ -397,7 +379,31 @@ If not ready: list the specific blockers in priority order.
 For "Who Implements": can the system's own agents/workers fix this,
 or does the human need to intervene directly?
 
-### 5.10 The Uncomfortable Question
+### 5.10 Value Assessment
+
+**Scope:** Strategic assessment — should this project exist in its
+current form? For technical goal comparison (code vs docs), see 5.4.
+For operational ratings (reliability, automation), see 5.6.
+
+Assess: problem clarity, target audience definition, maturity vs.
+claims, measurable value, differentiation from alternatives, and
+adoption readiness.
+
+See [Value Assessment](references/value-assessment.md) for the full
+framework with questions per dimension.
+
+Summarize as a table:
+
+| Dimension | Rating (1-5) | Evidence |
+|-----------|--------------|----------|
+| Problem clarity | | |
+| Audience definition | | |
+| Maturity vs. claims | | |
+| Measurable value | | |
+| Differentiation | | |
+| Adoption readiness | | |
+
+### 5.11 The Uncomfortable Question
 The one thing the project owner needs to hear but probably doesn't
 want to. Infrastructure gaps, fundamental design flaws, or unstated
 assumptions that undermine everything else.
@@ -430,30 +436,13 @@ Structured markdown report with:
 
 ## Gotchas
 
-Common mistakes agents make during audits — avoid these:
+See [Gotchas](references/gotchas.md) for the full list of 10 common
+agent mistakes with examples and fixes. Read before starting Phase 4.
 
-- **Praising by default.** Don't start with "this is a well-structured project" unless
-  you have specific evidence. Most projects aren't. Start neutral, let evidence shape tone.
-- **Listing features instead of evaluating them.** "The project has retry logic" is not
-  an audit finding. "The retry logic in `worker.py:84` retries 3 times with no backoff,
-  which will hammer a rate-limited API" is.
-- **Skipping file reads and guessing from names.** A file called `security.py` might
-  contain nothing security-related. A file called `utils.py` might contain the entire
-  business logic. Read before judging.
-- **Treating the README as ground truth.** The README describes what the author *intended*.
-  The code describes what actually happens. When they disagree, the code is right.
-- **Shallow security scanning.** Don't just grep for "password" and call it done.
-  Check for: hardcoded tokens in non-.env files, injectable template strings,
-  unvalidated user input passed to shell commands, overly broad CORS, missing auth
-  on endpoints.
-- **Ignoring cost.** An audit that doesn't mention what the system costs to run
-  (API calls, compute, storage, third-party services) is incomplete. Users need to
-  know if their architecture is burning money.
-- **Generic recommendations.** "Add more tests" is useless. "Add integration tests
-  for the payment flow in `checkout.py` because it has zero coverage and handles
-  money" is actionable.
-- **Forgetting to check what happens at scale.** The project works with 10 items.
-  What happens with 10,000? 1,000,000? Where does it break first?
+Key ones: don't praise by default, evaluate don't just list features,
+read files before referencing them, treat code as truth over README,
+go deep on security, always estimate cost, make recommendations
+specific, and check what happens at scale.
 
 ## Key Principles
 

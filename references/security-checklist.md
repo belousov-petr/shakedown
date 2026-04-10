@@ -43,3 +43,13 @@ Detailed checks for Section 5.1. Run all that apply to the project.
 - TLS/SSL where needed?
 - Rate limits on external services (LLM providers, APIs)
 - Peak hour pricing or throttling
+
+## Licensing & Legal Compliance
+
+- What license does the project use? Is it appropriate for the use case?
+- Are all dependency licenses compatible with the project license?
+  (e.g., GPL dependency in an MIT project)
+- Are there dependencies with restrictive or ambiguous licenses?
+- Is license attribution present where required (NOTICE file, headers)?
+- For data-handling projects: are there data processing agreements,
+  terms of service compliance, or regulatory requirements (GDPR, CCPA)?

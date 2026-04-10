@@ -28,12 +28,15 @@ One command. Full analysis. Actionable output.
 
 The audit discovers your project structure dynamically, reads everything, queries databases, tests backup integrity, and produces a structured report covering:
 
-- Architecture and code quality - design patterns, MECE analysis, contradictions, scalability, test coverage
-- Error handling and resilience - crash scenarios, timeout coverage, silent failures, data integrity, edge cases
+- Architecture and code quality - design patterns, MECE analysis, contradictions, algorithm efficiency, dependency graph, test coverage
+- Error handling and resilience - crash scenarios, timeout coverage, silent failures, data integrity, edge cases, retry patterns, graceful degradation
 - Performance and bottleneck analysis - timing, parallelism, scaling limits, resource waste, cost analysis
-- Security and data exposure - secrets, injection vulnerabilities, PII, supply chain, workflow security
+- Code and storage efficiency - empty files, duplicates, dead dependencies, build artifacts, storage bloat
+- Security and data exposure - secrets, injection vulnerabilities, PII, supply chain, workflow security, licensing compliance
 - Logging and observability - structured logs, traceability, alerting, monitoring
 - Documentation quality - accuracy vs codebase, completeness, onboarding readiness
+- Value assessment - problem clarity, target audience, maturity vs claims, differentiation, adoption readiness
+- Agent skill compliance - agentskills.io spec validation (conditional, for skill projects)
 - Production readiness - 10-gate PASS/PARTIAL/FAIL checklist with a ship/no-ship verdict
 - Ranked recommendations - top 10 actions with impact, effort, and who implements
 
@@ -90,10 +93,10 @@ Sends 4 agents to read everything at once. One covers config and architecture, o
 If there's a database, it connects and queries it. Checks table sizes, failure rates, data freshness. If there's no database, it skips this.
 
 ### Phase 4: Analyze
-This is where the actual opinions come in. Architecture review, error handling audit, performance analysis, resource waste. Everything quantified where possible.
+This is where the actual opinions come in. Architecture review, error handling audit, performance analysis, storage efficiency, resource waste. If the project is an agent skill, it also gets evaluated against the agentskills.io specification. Everything quantified where possible.
 
 ### Phase 5: Assess
-Security scan, PII check, documentation accuracy, whether the project actually does what it claims to do. Ends with the ranked recommendations and the uncomfortable question.
+Security scan, PII check, documentation accuracy, whether the project actually does what it claims to do. Includes a value assessment — does this project solve a real problem, for a clear audience, with measurable value? Ends with the ranked recommendations and the uncomfortable question.
 
 ### Phase 6: Test resilience
 Checks whether backups actually restore (not just whether they exist). Traces what happens when components fail.
@@ -121,19 +124,22 @@ It also activates from natural language:
 1. What the project is (derived from reading, not assumed)
 2. What's genuinely good, with evidence
 3. What will break soon, with evidence
-4. Architecture problems, MECE gaps, contradictions
-5. Error handling: crash paths, silent failures, edge cases
+4. Architecture problems, MECE gaps, contradictions, algorithm efficiency
+5. Error handling: crash paths, silent failures, edge cases, retry patterns
 6. Performance: bottlenecks, waste, cost
-7. Security: secrets, injection risks, PII
-8. Logging and monitoring gaps
-9. Documentation: accuracy, completeness, onboarding
-10. Goal fulfillment: stated vs actual behavior
-11. Blind spots nobody is watching
-12. Ratings (8 dimensions, scored 1-10)
-13. Overall score with justification
-14. Production readiness (10 gates, ship/no-ship verdict)
-15. Top 10 ranked fixes with effort estimates
-16. The uncomfortable question
+7. Code and storage efficiency: empty files, duplicates, dead deps, bloat
+8. Agent skill compliance (if applicable): spec, description, instructions, evals
+9. Security: secrets, injection risks, PII, licensing
+10. Logging and monitoring gaps
+11. Documentation: accuracy, completeness, onboarding
+12. Goal fulfillment: stated vs actual behavior
+13. Blind spots nobody is watching
+14. Ratings (8 dimensions, scored 1-10)
+15. Overall score with justification
+16. Production readiness (10 gates, ship/no-ship verdict)
+17. Top 10 ranked fixes with effort estimates
+18. Value assessment: problem clarity, audience, maturity, differentiation
+19. The uncomfortable question
 
 ## What to do with the report
 
@@ -179,7 +185,7 @@ A few rules I keep coming back to when reviewing my own projects:
 
 Tested on 3 real projects: a content pipeline (~2,800 lines Python), a 16-agent AI intelligence pipeline, and a browser automation tool (~1,000 lines JS). Each project was audited twice - once with the skill active, once with a bare "audit this project" prompt (no methodology).
 
-The output was graded against 18 structural completeness checks (see `scripts/validate-output.py`).
+The output was graded against structural completeness checks (see `scripts/validate-output.py` — now 22 checks including storage efficiency, value assessment, and conditional skill compliance).
 
 | Project | With skill | Without skill | Delta |
 |---------|-----------|--------------|-------|
@@ -204,12 +210,19 @@ The skill itself costs ~3,500 tokens to load (the SKILL.md file). The audit outp
 
 ```
 deep-project-audit/
-├── SKILL.md                              # The skill - loaded when activated
+├── SKILL.md                              # The skill - orchestrator (458 lines)
 ├── references/
+│   ├── architecture-quality.md           # Section 4.4: structure, MECE, algorithms, tests
+│   ├── error-resilience.md               # Section 4.5: crashes, timeouts, edge cases
+│   ├── performance-analysis.md           # Section 4.6: timing, scaling, cost
+│   ├── storage-efficiency.md             # Section 4.7: empty files, duplicates, bloat
+│   ├── skill-standards.md                # Section 4.8: agentskills.io compliance
 │   ├── db-diagnostics.md                 # Phase 3: database-specific queries
-│   ├── security-checklist.md             # Section 5.1: full security checks
-│   ├── performance-analysis.md           # Section 4.6: full performance checks
-│   └── resilience-testing.md             # Phase 6: backup and resilience tests
+│   ├── security-checklist.md             # Section 5.1: secrets, injection, PII, licensing
+│   ├── operational-health.md             # Sections 5.2/5.3/5.5: logging, docs, blind spots
+│   ├── value-assessment.md               # Section 5.10: problem, audience, maturity
+│   ├── resilience-testing.md             # Phase 6: backup and resilience tests
+│   └── gotchas.md                        # 10 common agent audit mistakes
 ├── examples/
 │   ├── benchmark-audit-a.md              # With-skill audit: content pipeline
 │   ├── benchmark-audit-b.md              # With-skill audit: agent pipeline
@@ -218,15 +231,15 @@ deep-project-audit/
 │   ├── baseline-audit-b.md               # Without-skill baseline: agent pipeline
 │   └── baseline-audit-c.md               # Without-skill baseline: browser tool
 ├── evals/
-│   ├── evals.json                        # 5 test cases with 35 assertions
+│   ├── evals.json                        # 7 test cases with 51 assertions
 │   └── README.md                         # How to run and grade evals
 ├── scripts/
-│   └── validate-output.py                # 18-check output completeness validator
+│   └── validate-output.py                # 22-check output completeness validator
 ├── README.md
 └── LICENSE                               # CC BY 4.0
 ```
 
-The main SKILL.md contains the methodology and output format. Detailed checklists are in `references/` and loaded on demand - this keeps activation cost low while preserving depth.
+The main SKILL.md is a clean orchestrator — phases, flow, output templates. All detailed checklists live in `references/` (11 files, 1,063 lines) and are loaded on demand. This keeps activation cost low while preserving depth. Each reference file includes scope boundary notes to prevent overlap.
 
 ## Validation
 

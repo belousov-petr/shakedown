@@ -3,6 +3,11 @@
 Detailed guidance for Phase 6. The goal is to verify that safety nets
 work, not just that they exist.
 
+**Scope boundary:** This file covers hands-on testing (does recovery
+*actually* work). For code-level failure mode analysis, see
+`error-resilience.md` (Section 4.5). For live data store queries,
+see `db-diagnostics.md` (Phase 3).
+
 ## 6a. Backup Validation
 
 **Test it. Don't just note that backups exist.**

@@ -116,7 +116,7 @@ def validate(path: str) -> list:
     text = read_report(path)
     results = []
 
-    # Required sections
+    # Required sections (present in every audit)
     sections = [
         "What the Project Is",
         "What Works Well",
@@ -124,11 +124,13 @@ def validate(path: str) -> list:
         "Architecture",
         "Error Handling",
         "Performance",
+        "Storage Efficiency",
         "Security",
         "Logging",
         "Documentation Quality",
         "Goal Fulfillment",
         "Blind Spots",
+        "Value Assessment",
         "Uncomfortable Question",
     ]
     for s in sections:
@@ -141,6 +143,13 @@ def validate(path: str) -> list:
 
     # Column completeness
     results.append({"check": "columns:Recommendations", **check_recommendations_columns(text)})
+
+    # Value Assessment table (6 dimensions)
+    results.append({"check": "table:Value Assessment", **check_table(text, "Value Assessment", min_rows=4)})
+
+    # Skill Standards table (conditional — only if report covers a skill)
+    if re.search(r"(?:skill standards|agent skill|SKILL\.md)", text, re.IGNORECASE):
+        results.append({"check": "table:Skill Standards", **check_table(text, "Skill Standards", min_rows=3)})
 
     # Rating and verdict
     results.append({"check": "rating:Overall", **check_rating(text)})

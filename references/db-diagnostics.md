@@ -3,6 +3,11 @@
 Detailed guidance for Phase 3 database inspection. Adapt to whatever
 data store the project uses.
 
+**Scope boundary:** This file covers live queries against data stores
+(what the data *actually* looks like). For code-level failure mode
+analysis, see `error-resilience.md` (Section 4.5). For hands-on
+backup restore testing, see `resilience-testing.md` (Phase 6).
+
 ## 3a. Find Connection Credentials
 
 - Check config files, .env, source code for connection strings
