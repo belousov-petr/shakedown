@@ -38,31 +38,35 @@ def check_section(text: str, heading: str) -> dict:
 def check_table(text: str, label: str, min_rows: int = 2) -> dict:
     """Check that a table exists near a heading and has enough data rows."""
     pattern = rf"#+\s*.*{re.escape(label)}.*"
-    match = re.search(pattern, text, re.IGNORECASE)
-    if not match:
-        # Try finding the table by looking for the label anywhere
-        idx = text.lower().find(label.lower())
-        if idx == -1:
-            return {"pass": False, "reason": f"Table '{label}' section not found"}
-        after = text[idx:]
-    else:
+    best_result = None
+
+    # Try all heading matches — skip umbrella headings that have the wrong table
+    for match in re.finditer(pattern, text, re.IGNORECASE):
         after = text[match.end():]
+        table_match = re.search(r"(\|.+\|[\r\n]+\|[-:\s|]+\|[\r\n]+((?:\|.+\|[\r\n]*)+))", after[:4000])
+        if not table_match:
+            continue
 
-    # Find the first markdown table after the heading (search up to 4000 chars)
-    table_match = re.search(r"(\|.+\|[\r\n]+\|[-:\s|]+\|[\r\n]+((?:\|.+\|[\r\n]*)+))", after[:4000])
-    if not table_match:
-        return {"pass": False, "reason": f"No table found near '{label}'"}
+        rows = [r for r in table_match.group(2).strip().splitlines() if r.strip().startswith("|")]
+        empty_rows = sum(1 for r in rows if re.match(r"^\|[\s|.]*\|$", r.strip()))
+        if empty_rows == len(rows):
+            continue
 
-    rows = [r for r in table_match.group(2).strip().splitlines() if r.strip().startswith("|")]
-    if len(rows) < min_rows:
-        return {"pass": False, "reason": f"Table '{label}' has {len(rows)} data rows, expected >= {min_rows}"}
+        if len(rows) >= min_rows:
+            return {"pass": True, "reason": f"Table '{label}' found with {len(rows)} data rows"}
 
-    # Check rows aren't all empty (just pipes and spaces)
-    empty_rows = sum(1 for r in rows if re.match(r"^\|[\s|.]*\|$", r.strip()))
-    if empty_rows == len(rows):
-        return {"pass": False, "reason": f"Table '{label}' rows are all empty"}
+        # Track best result in case no match meets min_rows
+        if not best_result or len(rows) > best_result[0]:
+            best_result = (len(rows), rows)
 
-    return {"pass": True, "reason": f"Table '{label}' found with {len(rows)} data rows"}
+    if best_result:
+        return {"pass": False, "reason": f"Table '{label}' has {best_result[0]} data rows, expected >= {min_rows}"}
+
+    # Fallback: search for label anywhere
+    idx = text.lower().find(label.lower())
+    if idx == -1:
+        return {"pass": False, "reason": f"Table '{label}' section not found"}
+    return {"pass": False, "reason": f"No table found near '{label}'"}
 
 
 def check_rating(text: str) -> dict:
