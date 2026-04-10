@@ -1,8 +1,19 @@
 ---
 name: deep-project-audit
-description: "Full-stack audit of any project — multi-agent systems, pipelines, codebases, or applications. Dynamically discovers project structure, reads all config/code/data, queries databases, tests backup integrity, and analyzes architecture, reliability, efficiency, and security. Produces ranked actionable recommendations. Use when asked to audit, analyze, review, stress-test, or challenge any project, or when user asks 'how solid is this project', 'what is missing', or 'find the weak spots'."
+description: >-
+  Full-stack audit of any project — multi-agent systems, pipelines, codebases,
+  or applications. Dynamically discovers project structure, reads all
+  config/code/data, queries databases, tests backup integrity, and analyzes
+  architecture, reliability, efficiency, and security. Produces ranked actionable
+  recommendations. Use when asked to audit, analyze, review, health check,
+  stress-test, due diligence, gap analysis, or challenge any project, assess
+  technical debt, or when user asks 'how solid is this project', 'what is missing',
+  'find the weak spots', 'is this production ready', 'what's wrong with this',
+  or 'how mature is this'.
 license: CC-BY-4.0
-compatibility: "Requires Claude Code or similar agent with file-read, shell execution, and parallel subagent capabilities"
+compatibility: >-
+  Requires Claude Code or similar agent with file-read, shell execution,
+  and parallel subagent capabilities
 metadata:
   author: belousov-petr
   version: "1.0.0"
@@ -130,6 +141,11 @@ abort — adjust the scope and re-confirm.
 Dispatch **4 parallel agents**, each reading one slice of the project.
 Adapt the slices to whatever Phase 1 discovered.
 
+**If parallel agents are not available** (no subagent support): run
+the 4 slices sequentially in this order: Architecture & Configuration,
+Execution Logic, Outputs & Docs, Data & Infrastructure. The audit
+will take longer but produces the same output.
+
 **If project has >1000 files**: sample instead of reading everything.
 Read representative files from each directory (2-3 per folder), count
 the rest, and note which areas were sampled vs fully read.
@@ -178,6 +194,9 @@ in the report and proceed to Phase 4.
 **If database found but credentials unavailable**: skip queries. Note
 "Database detected but could not access — manual credential needed" and
 proceed to Phase 4.
+
+**If shell execution is not available**: skip this phase entirely. Note
+"Data store diagnostics skipped — no shell access" and proceed to Phase 4.
 
 See [DB Diagnostics](references/db-diagnostics.md) for database-specific
 queries and inspection guidance.
@@ -390,6 +409,12 @@ assumptions that undermine everything else.
 **If no backups exist**: note as critical gap in the report. Skip
 restore testing but still assess operational resilience.
 
+**If shell execution is not available**: skip restore testing. Instead,
+assess resilience from code analysis only — check whether backup logic
+exists in the code, whether recovery procedures are documented, and
+whether there are any disaster recovery references. Note "Resilience
+testing limited — no shell access for restore verification."
+
 See [Resilience Testing](references/resilience-testing.md) for backup
 validation steps and operational resilience checks.
 
@@ -402,6 +427,33 @@ Structured markdown report with:
 - Direct, challenging tone — find what's wrong, not just what's right
 - Evidence for every claim (file paths, query results, counts)
 - Actionable: user should be able to say "fix them all" immediately
+
+## Gotchas
+
+Common mistakes agents make during audits — avoid these:
+
+- **Praising by default.** Don't start with "this is a well-structured project" unless
+  you have specific evidence. Most projects aren't. Start neutral, let evidence shape tone.
+- **Listing features instead of evaluating them.** "The project has retry logic" is not
+  an audit finding. "The retry logic in `worker.py:84` retries 3 times with no backoff,
+  which will hammer a rate-limited API" is.
+- **Skipping file reads and guessing from names.** A file called `security.py` might
+  contain nothing security-related. A file called `utils.py` might contain the entire
+  business logic. Read before judging.
+- **Treating the README as ground truth.** The README describes what the author *intended*.
+  The code describes what actually happens. When they disagree, the code is right.
+- **Shallow security scanning.** Don't just grep for "password" and call it done.
+  Check for: hardcoded tokens in non-.env files, injectable template strings,
+  unvalidated user input passed to shell commands, overly broad CORS, missing auth
+  on endpoints.
+- **Ignoring cost.** An audit that doesn't mention what the system costs to run
+  (API calls, compute, storage, third-party services) is incomplete. Users need to
+  know if their architecture is burning money.
+- **Generic recommendations.** "Add more tests" is useless. "Add integration tests
+  for the payment flow in `checkout.py` because it has zero coverage and handles
+  money" is actionable.
+- **Forgetting to check what happens at scale.** The project works with 10 items.
+  What happens with 10,000? 1,000,000? Where does it break first?
 
 ## Key Principles
 

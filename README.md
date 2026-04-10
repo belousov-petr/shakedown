@@ -87,17 +87,39 @@ curl -o ~/.claude/skills/deep-project-audit/SKILL.md \
 
 Restart Claude Code. It shows up as `/deep-project-audit`.
 
-### Check it works
+### Any skills-compatible agent (cross-client)
 
-```
-/deep-project-audit
+Use the `.agents/skills/` path for compatibility with Cursor, Gemini CLI, Copilot, and [30+ other clients](https://agentskills.io/home):
+
+```bash
+mkdir -p ~/.agents/skills/deep-project-audit
+curl -o ~/.agents/skills/deep-project-audit/SKILL.md \
+  https://raw.githubusercontent.com/belousov-petr/deep-project-audit/main/SKILL.md
 ```
 
-You should see it start mapping your project structure.
+Or install at project level (travels with the repo):
+
+```bash
+mkdir -p .agents/skills/deep-project-audit
+curl -o .agents/skills/deep-project-audit/SKILL.md \
+  https://raw.githubusercontent.com/belousov-petr/deep-project-audit/main/SKILL.md
+```
 
 ## Usage
 
-Go to your project directory and run `/deep-project-audit`. Or just say "audit this project" or "find the weak spots" in natural language.
+Go to your project directory and run `/deep-project-audit`. You should see it start mapping your project structure.
+
+It also activates from natural language. Any of these will trigger it:
+
+- "audit this project"
+- "find the weak spots"
+- "is this production ready"
+- "what's wrong with this"
+- "do a health check on this project"
+- "how mature is this"
+- "due diligence on this codebase"
+- "assess technical debt"
+- "gap analysis"
 
 ### The report covers
 
@@ -161,7 +183,7 @@ The bare audits found real issues but produced freeform prose. They consistently
 
 ## Token usage
 
-A typical audit uses 50K-300K tokens across all 6 phases, depending on project size:
+The skill itself costs ~3,500 tokens to load (the SKILL.md file). The audit output uses 50K-300K tokens across all 6 phases, depending on project size:
 
 | Project type | Files | Tokens | Example |
 |---|---|---|---|
@@ -196,6 +218,16 @@ deep-project-audit/
 ```
 
 The main SKILL.md contains the methodology and output format. Detailed checklists are in `references/` and loaded on demand - this keeps activation cost low while preserving depth.
+
+## Validation
+
+Validate the skill against the [Agent Skills specification](https://agentskills.io/specification):
+
+```bash
+npx skills-ref validate ./deep-project-audit
+```
+
+This checks frontmatter fields, naming conventions, and directory structure compliance.
 
 ## Contributing
 
