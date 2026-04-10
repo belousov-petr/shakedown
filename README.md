@@ -84,7 +84,7 @@ rm -rf /tmp/dpa
 ## How it works
 
 ### Phase 1: Discover
-Looks at the project before assuming anything. Maps the structure, checks git history, reads the README, then asks you to confirm scope before burning tokens.
+Looks at the project before assuming anything. Maps the structure, checks git history, reads the README, detects if it's an agent skill (triggers extra checks in Phase 4), then asks you to confirm scope before burning tokens.
 
 ### Phase 2: Read (parallel)
 Sends 4 agents to read everything at once. One covers config and architecture, one covers execution logic, one reads outputs and docs, one counts files and checks data stores.
@@ -118,6 +118,8 @@ It also activates from natural language:
 | `due diligence on this codebase` | Full audit, emphasis on risks and gaps |
 | `assess technical debt` | Full audit, emphasis on architecture and code quality |
 | `gap analysis` | Full audit, emphasis on blind spots |
+| `does this solve a real problem` | Full audit, emphasis on value assessment |
+| `who is this for` | Full audit, emphasis on audience and adoption readiness |
 
 ### The report covers
 
