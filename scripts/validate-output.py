@@ -21,17 +21,18 @@ def read_report(path: str) -> str:
 def check_section(text: str, heading: str) -> dict:
     """Check that a markdown heading exists and has content below it."""
     pattern = rf"#+\s*.*{re.escape(heading)}.*"
-    match = re.search(pattern, text, re.IGNORECASE)
-    if not match:
-        return {"pass": False, "reason": f"Section '{heading}' not found"}
-    # Check there's content between this heading and the next heading (or EOF)
-    after = text[match.end():]
-    next_heading = re.search(r"\n#{1,4}\s", after)
-    content = after[:next_heading.start()] if next_heading else after
-    content = content.strip()
-    if len(content) < 20:
+    # Find ALL matches — some headings are umbrella sections with subsections
+    for match in re.finditer(pattern, text, re.IGNORECASE):
+        after = text[match.end():]
+        next_heading = re.search(r"\n#{1,4}\s", after)
+        content = after[:next_heading.start()] if next_heading else after
+        content = content.strip()
+        if len(content) >= 20:
+            return {"pass": True, "reason": f"Section '{heading}' found with content"}
+    # Check if any match was found at all
+    if re.search(pattern, text, re.IGNORECASE):
         return {"pass": False, "reason": f"Section '{heading}' exists but has minimal content"}
-    return {"pass": True, "reason": f"Section '{heading}' found with content"}
+    return {"pass": False, "reason": f"Section '{heading}' not found"}
 
 
 def check_table(text: str, label: str, min_rows: int = 2) -> dict:
@@ -47,8 +48,8 @@ def check_table(text: str, label: str, min_rows: int = 2) -> dict:
     else:
         after = text[match.end():]
 
-    # Find the first markdown table after the heading
-    table_match = re.search(r"(\|.+\|[\r\n]+\|[-:\s|]+\|[\r\n]+((?:\|.+\|[\r\n]*)+))", after[:2000])
+    # Find the first markdown table after the heading (search up to 4000 chars)
+    table_match = re.search(r"(\|.+\|[\r\n]+\|[-:\s|]+\|[\r\n]+((?:\|.+\|[\r\n]*)+))", after[:4000])
     if not table_match:
         return {"pass": False, "reason": f"No table found near '{label}'"}
 
@@ -89,11 +90,13 @@ def check_recommendations_columns(text: str) -> dict:
     """Check that the recommendations table has all 4 required columns."""
     required = ["action", "impact", "effort", "who"]
     pattern = r"#+\s*.*(?:Ranked|Recommendation).*"
-    match = re.search(pattern, text, re.IGNORECASE)
-    if not match:
+    # Find the match closest to an actual table (skip umbrella headings)
+    for match in re.finditer(pattern, text, re.IGNORECASE):
+        after = text[match.end():match.end() + 4000]
+        if re.search(r"\|.+\|", after[:500]):
+            break
+    else:
         return {"pass": False, "reason": "Recommendations section not found"}
-
-    after = text[match.end():match.end() + 2000]
     header_match = re.search(r"\|(.+)\|", after)
     if not header_match:
         return {"pass": False, "reason": "No table header found in recommendations"}
