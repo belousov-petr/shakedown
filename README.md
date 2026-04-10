@@ -105,19 +105,7 @@ Checks whether backups actually restore (not just whether they exist). Traces wh
 
 Go to your project directory and run `/deep-project-audit`. You should see it start mapping your project structure.
 
-It also activates from natural language:
-
-| Say this | What it maps to |
-|----------|----------------|
-| `audit this project` | Full 6-phase audit |
-| `find the weak spots` | Full audit, emphasis on critical issues |
-| `is this production ready` | Full audit, emphasis on readiness gates |
-| `what's wrong with this` | Full audit, emphasis on problems |
-| `do a health check on this project` | Full audit, broad assessment |
-| `how mature is this` | Full audit, emphasis on maturity scoring |
-| `due diligence on this codebase` | Full audit, emphasis on risks and gaps |
-| `assess technical debt` | Full audit, emphasis on architecture and code quality |
-| `gap analysis` | Full audit, emphasis on blind spots |
+It also activates from natural language — `audit this project`, `is this production ready`, `find the weak spots`, or similar.
 
 ### The report covers
 
