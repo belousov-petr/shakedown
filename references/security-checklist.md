@@ -3,6 +3,34 @@
 Detailed checks for Section 5.1. Run all that apply to the project.
 Structured around traditional security plus OWASP GenAI frameworks.
 
+### Foundational Architectural Principle
+
+_[Ref: OWASP GenAI Data Security 2026, "What is Data Security in the
+GenAI Context?" pp. 6-8]_
+
+**The context window is a flat namespace with no internal access control.**
+In GenAI systems, the context window aggregates data from multiple trust
+domains — system prompts, user input, RAG results, tool outputs,
+conversation history — into a single namespace where all inputs share
+equal trust weight. The model cannot inherently distinguish trusted
+instructions from untrusted data. This architectural fusion of control
+and data planes is the root cause underlying most GenAI-specific risks
+(DSGAI01, DSGAI11, DSGAI15, DSGAI19, DSGAI21). All mitigations in this
+checklist work **around** this limitation rather than solving it.
+
+**Core security posture**: GenAI systems must assume zero inherent trust
+in the model (it can leak, regurgitate, or reconstruct data via
+memorization, inversion, or output). Key principles:
+- **Minimization**: only send what's needed; avoid over-broad context
+- **Isolation**: per-tenant/per-user/per-agent boundaries; scoped tool
+  permissions; HITL for high-risk/irreversible actions
+- **Lifecycle rigor**: retention/erasure across raw + derived assets
+  (embeddings, caches, backups, fine-tuned weights)
+- **Integrity & provenance**: detect poisoning/tampering; track lineage
+- **Continuous monitoring**: DLP on prompts/outputs/logs; anomaly
+  detection for scraping/enumeration
+- **Governance**: traceability, lawful basis, DSR support, audit readiness
+
 ---
 
 ## A. Traditional Application Security
@@ -81,7 +109,8 @@ Structured around traditional security plus OWASP GenAI frameworks.
 If no LLM components detected, note "No LLM components — section skipped."
 
 ### LLM01: Prompt Injection
-_[Ref: OWASP LLM Top 10 2025 — LLM01, genai.owasp.org/llmrisk/llm01-prompt-injection]_
+_[Ref: OWASP LLM Top 10 2025 — LLM01, genai.owasp.org/llmrisk/llm01-prompt-injection;
+MITRE ATLAS: AML.T0051.000 (Direct), AML.T0051.001 (Indirect), AML.T0054 (Jailbreak)]_
 
 - Can user input alter the LLM's behavior beyond intended scope?
 - **Direct injection**: are there constraints on the model's role,
@@ -89,16 +118,21 @@ _[Ref: OWASP LLM Top 10 2025 — LLM01, genai.owasp.org/llmrisk/llm01-prompt-inj
 - **Indirect injection**: can external data sources (websites, files,
   tool outputs) influence LLM behavior?
 - **Multimodal injection**: can hidden instructions in images, audio,
-  or documents manipulate the model?
+  or documents manipulate the model? (steganography, cross-modal attacks)
+- **Jailbreaking** (distinct from prompt injection): can inputs cause
+  the model to disregard safety protocols entirely?
 - Is input/output filtering implemented? Semantic filters, string checks?
 - Are expected output formats defined and validated deterministically?
 - Is privilege control enforced (least privilege access for the LLM)?
 - Is human approval required for high-risk actions?
 - Is external content segregated and clearly identified as untrusted?
 - Is adversarial testing (red teaming) conducted against prompt injection?
+- Are low-resource language bypasses tested? (translating unsafe inputs
+  into low-resource languages to evade safeguards)
 
 ### LLM02: Sensitive Information Disclosure
-_[Ref: OWASP LLM Top 10 2025 — LLM02, genai.owasp.org/llmrisk/llm022025-sensitive-information-disclosure]_
+_[Ref: OWASP LLM Top 10 2025 — LLM02, genai.owasp.org/llmrisk/llm022025-sensitive-information-disclosure;
+MITRE ATLAS: AML.T0024.000 (Infer Membership), AML.T0024.001 (Invert Model), AML.T0024.002 (Extract Model)]_
 
 - Can the LLM leak PII, financial details, health records, or credentials
   through its output?
@@ -108,6 +142,11 @@ _[Ref: OWASP LLM Top 10 2025 — LLM02, genai.owasp.org/llmrisk/llm022025-sensit
 - Are there Terms of Use policies allowing users to opt out of training?
 - Is tokenization or redaction applied to sensitive content before processing?
 - Is differential privacy or federated learning used where applicable?
+- Is homomorphic encryption considered for privacy-preserving ML?
+- Are model inversion attacks tested? _(ref: CVE-2019-20634 "Proof Pudding"
+  — disclosed training data enabled model extraction and email filter bypass)_
+- Is the system preamble concealed from user override attempts?
+  _[Ref: OWASP API8:2023 Security Misconfiguration]_
 
 ### LLM03: Supply Chain Vulnerabilities
 _[Ref: OWASP LLM Top 10 2025 — LLM03, genai.owasp.org/llmrisk/llm032025-supply-chain]_
@@ -115,29 +154,60 @@ _[Ref: OWASP LLM Top 10 2025 — LLM03, genai.owasp.org/llmrisk/llm032025-supply
 - Are third-party models from trusted, verified sources?
 - Are model versions pinned and integrity-verified (checksums/signatures)?
 - Are pre-trained models scanned for backdoors or poisoned weights?
+  (including ROME/lobotomization — direct model parameter manipulation)
 - Are training data sources vetted for integrity and licensing?
-- Is there an AI/ML software bill of materials (SBOM)?
+- Is there an AI/ML SBOM using OWASP CycloneDX ML-BOM (ECMA-424 v1.7)?
 - Are plugin/extension ecosystems audited for security?
 - Are supply chain security gates integrated into CI/CD for AI components?
+- **LoRA adapter risks**: are adapters verified before deployment?
+  (malicious LoRA can compromise base model integrity; adapters from
+  collaborative model merge environments need vetting)
+- **On-device LLM risks**: are models encrypted with integrity checks?
+  Is there vendor attestation for firmware? Can apps be reverse-engineered
+  to extract/tamper with models?
+- **Model merging risks**: are merged models re-evaluated for safety?
+  (merged models can bypass published benchmark safety assurances)
+- Are vendor T&Cs and data privacy policies reviewed? (unclear policies
+  may expose sensitive data to model training)
+- Is Data Version Control (DVC) or equivalent used to track dataset changes?
 
 ### LLM04: Data and Model Poisoning
-_[Ref: OWASP LLM Top 10 2025 — LLM04, genai.owasp.org/llmrisk/llm042025-data-and-model-poisoning]_
+_[Ref: OWASP LLM Top 10 2025 — LLM04, genai.owasp.org/llmrisk/llm042025-data-and-model-poisoning;
+MITRE ATLAS: AML.T0018 (Backdoor ML Model), AML.T0020 (Poison Training Data)]_
 
 - Is training data validated for integrity, bias, and malicious content?
-- Are data provenance and lineage tracked?
+- Are data provenance and lineage tracked (CycloneDX ML-BOM)?
 - Is there monitoring for data drift or anomalous training inputs?
 - Are fine-tuning datasets reviewed for poisoning attempts?
 - Are adversarial robustness tests run on the model?
 - Is there a rollback mechanism for model versions?
+- **Named attack techniques to test for**:
+  - Split-View Data Poisoning (different data shown during validation vs training)
+  - Frontrunning Poisoning (injecting data before legitimate collection)
+  - Malicious pickling (model files executing arbitrary code on load)
+  - Backdoor sleeper agents (hidden triggers activated by specific inputs)
+    _[Ref: Anthropic research arXiv:2401.05566]_
+  - Shadow Ray attack (Ray AI framework vulnerabilities exploited in the wild)
+- Is Anthropic's finding noted? 250 poisoned samples (0.00016% of training
+  tokens) produced measurable behavioral impact — the practical lower
+  bound for effective poisoning is very low
 
 ### LLM05: Improper Output Handling
-_[Ref: OWASP LLM Top 10 2025 — LLM05, genai.owasp.org/llmrisk/llm052025-improper-output-handling]_
+_[Ref: OWASP LLM Top 10 2025 — LLM05, genai.owasp.org/llmrisk/llm052025-improper-output-handling;
+follow OWASP ASVS guidelines for input validation/sanitization]_
 
 - Is LLM output treated as untrusted input by downstream components?
 - Are outputs sanitized before rendering (preventing XSS, SSRF, code exec)?
 - Are outputs validated against expected schemas or formats?
 - Is there content filtering for harmful, toxic, or inappropriate content?
 - Can LLM output trigger privileged operations without validation?
+- Is context-aware output encoding applied (HTML, JavaScript, SQL, URL)?
+- Are parameterized queries/prepared statements used for all DB operations?
+- Is Content Security Policy (CSP) configured?
+- Are path traversal vulnerabilities via LLM output prevented?
+- Are CSRF protections applied to LLM-generated form submissions?
+- Are email template phishing vectors considered (LLM generating malicious
+  email content)?
 
 ### LLM06: Excessive Agency
 _[Ref: OWASP LLM Top 10 2025 — LLM06, genai.owasp.org/llmrisk/llm062025-excessive-agency]_
@@ -150,9 +220,16 @@ _[Ref: OWASP LLM Top 10 2025 — LLM06, genai.owasp.org/llmrisk/llm062025-excess
 - Is there human-in-the-loop for high-risk actions?
 - Are plugin permissions scoped to minimum necessary?
 - Is there rate limiting on LLM-initiated actions?
+- Are open-ended extensions avoided (shell commands, arbitrary URL fetching)?
+- Are extensions executed in the user's context (OAuth with minimal scopes)?
+- Is "complete mediation" applied? (downstream systems independently validate
+  all requests, not trusting the LLM's authorization)
+- Are SAST/DAST/IAST tools used to scan LLM input/output handling code?
+- Is extension activity logged and monitored for anomalous patterns?
 
 ### LLM07: System Prompt Leakage
-_[Ref: OWASP LLM Top 10 2025 — LLM07, genai.owasp.org/llmrisk/llm072025-system-prompt-leakage]_
+_[Ref: OWASP LLM Top 10 2025 — LLM07, genai.owasp.org/llmrisk/llm072025-system-prompt-leakage;
+MITRE ATLAS: AML.T0051.000 (Meta Prompt Extraction)]_
 
 - Can users extract the system prompt through direct queries?
 - Does the system prompt contain sensitive information (API keys, internal
@@ -160,6 +237,9 @@ _[Ref: OWASP LLM Top 10 2025 — LLM07, genai.owasp.org/llmrisk/llm072025-system
 - Is the system prompt hardened against extraction techniques?
 - Is prompt content separated from sensitive configuration?
 - Are there guardrails preventing the LLM from revealing its instructions?
+- **Critical**: security controls must be enforced independently of the
+  system prompt — do NOT rely on "don't reveal X" instructions as a
+  security mechanism. Delegate authorization to external systems.
 
 ### LLM08: Vector and Embedding Weaknesses
 _[Ref: OWASP LLM Top 10 2025 — LLM08, genai.owasp.org/llmrisk/llm082025-vector-and-embedding-weaknesses]_
@@ -181,9 +261,17 @@ _[Ref: OWASP LLM Top 10 2025 — LLM09, genai.owasp.org/llmrisk/llm092025-misinf
 - Are there confidence scores or uncertainty indicators on outputs?
 - Is there human review for high-stakes decisions based on LLM output?
 - Are watermarking or provenance mechanisms used for AI-generated content?
+- **Unsafe code generation**: does the LLM generate code that is
+  reviewed for hidden backdoors or insecure patterns before use?
+- Are field-of-use limitations clearly labeled in the UI?
+- Are automatic validation mechanisms in place for high-stakes outputs?
+- Is model fine-tuning or Parameter-Efficient Tuning (PET) used to
+  reduce hallucination rates in domain-specific contexts?
+- Are users educated on LLM limitations and encouraged to verify outputs?
 
 ### LLM10: Unbounded Consumption
-_[Ref: OWASP LLM Top 10 2025 — LLM10, genai.owasp.org/llmrisk/llm102025-unbounded-consumption]_
+_[Ref: OWASP LLM Top 10 2025 — LLM10, genai.owasp.org/llmrisk/llm102025-unbounded-consumption;
+CWE-400 (Uncontrolled Resource Consumption)]_
 
 - Are there rate limits on LLM API calls (per user, per session)?
 - Are token/context window limits enforced?
@@ -191,6 +279,19 @@ _[Ref: OWASP LLM Top 10 2025 — LLM10, genai.owasp.org/llmrisk/llm102025-unboun
 - Can a user trigger excessive resource consumption (DoS via large inputs)?
 - Are there timeouts on LLM inference requests?
 - Is there protection against model extraction (systematic API probing)?
+- **Denial of Wallet (DoW)**: can an attacker cause excessive financial
+  cost through crafted high-token or high-compute requests?
+- **Continuous input overflow**: can inputs exceed the context window
+  causing degraded/unpredictable behavior?
+- **Resource-intensive queries**: are complex reasoning or large RAG
+  retrieval operations bounded?
+- **Side-channel attacks**: can model weights or architecture be inferred
+  from timing, power consumption, or response patterns?
+- Are logits/logprobs exposure limited or obfuscated?
+- Are known glitch tokens filtered before context processing?
+- Is watermarking implemented to detect unauthorized model copies?
+- Is there a centralized ML model inventory/registry with governance?
+- Are MLOps deployment workflows automated with security gates?
 
 ---
 
@@ -204,75 +305,185 @@ _[Ref: OWASP Top 10 for Agentic Applications 2026,
 genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026]_
 
 ### ASI01: Agent Goal Hijack
+_[Maps to: T06 Goal Manipulation, T07 Misaligned & Deceptive Behaviors]_
 - Can external inputs (prompt injection, poisoned data) redirect the
   agent's goals or objectives?
 - Are agent goals clearly defined and constrained in system prompts?
+  Changes to goals must require configuration management and human approval.
 - Is there monitoring for goal drift or unexpected behavior changes?
+  Track a stable identifier for the active goal where feasible.
 - Are there guardrails preventing agents from taking actions outside
   their defined scope?
+- Are connected data sources sanitized (RAG inputs, emails, calendar
+  invites, uploaded files, APIs, browsing output, peer-agent messages)
+  using CDR (Content Disarm & Reconstruction) and prompt-carrier detection?
+- Are agents incorporated into the Insider Threat Program?
+- Is there periodic red-team testing for goal override with rollback
+  verification?
 
 ### ASI02: Tool Misuse & Exploitation
+_[Maps to: T02 Tool Misuse, T04 Resource Overload, T16 Insecure Protocol Abuse]_
 - Are tool descriptions validated against actual runtime behavior?
 - Are tool inputs schema-validated (JSON Schema, Pydantic)?
 - Can tools perform actions not mentioned in their descriptions?
 - Are tool permissions scoped to minimum necessary (least privilege)?
+  Define per-tool profiles: scopes, max rate, egress allowlists.
 - Is there allowlisting for permitted tool operations?
+- Is there action-level authentication with human confirmation for
+  destructive actions (delete, transfer, publish)? Provide dry-run/diff
+  preview before high-impact actions are approved.
+- Are execution sandboxes and egress controls in place? Deny all
+  non-approved network destinations.
+- Is there a Policy Enforcement Point (PEP/PDP) validating intent and
+  arguments before execution ("Intent Gate")?
+- Is there adaptive tool budgeting (cost/rate/token ceilings with
+  automatic revocation when exceeded)?
+- Are credentials Just-In-Time and ephemeral (expire after use)?
+- Is semantic/identity validation applied? (fully qualified tool names,
+  version pins, fail-closed on ambiguous resolution)
 
 ### ASI03: Identity & Privilege Abuse
+_[Maps to: T03 Privilege Compromise; aligns with OWASP NHI Top 10]_
 - Do agents have unique identities (not shared service accounts)?
+  The "attribution gap" (agents without distinct identities) makes
+  least privilege impossible to enforce.
 - Are agent credentials short-lived and narrowly scoped?
 - Is there per-agent permission enforcement?
 - Can agents escalate privileges through tool chaining?
 - Are Non-Human Identities (NHIs) governed with lifecycle management?
-  _[Ref: OWASP NHI Top 10 mapping in Agentic Top 10 Appendix C]_
+  _[Ref: OWASP NHI Top 10 mapping in Agentic Top 10 Appendix C:
+  NHI1 (Improper Offboarding) → ASI04; NHI2 (Secret Leakage) → ASI02/06;
+  NHI3 (Vulnerable Third-Party NHI) → ASI04/03; NHI4 (Insecure Auth) → ASI03/07;
+  NHI5 (Overprivileged NHI) → ASI02/03; NHI6 (Insecure Cloud Deploy) → ASI04/05;
+  NHI7 (Long-Lived Secrets) → ASI06/08; NHI8 (Environment Isolation) → ASI08/07;
+  NHI9 (NHI Reuse) → ASI08/04; NHI10 (Human Use of NHI) → ASI09/01]_
+- Is memory-based privilege retention prevented? (cached credentials
+  from prior sessions must not be reusable)
+- Are cross-agent trust relationships validated? (Confused Deputy:
+  low-privilege agent relaying instructions to high-privilege agent)
+- Is TOCTOU (Time-of-Check-to-Time-of-Use) prevented in workflows?
+  (permissions validated at each step, not just at start)
+- Is synthetic identity injection prevented? (fake agent descriptors
+  like "Admin Helper" gaining inherited trust)
+- Are intent-bound tokens used? (OAuth tokens bound to signed intent
+  including subject, audience, purpose, and session)
+- Is the project evaluated against agentic identity platforms?
+  (Microsoft Entra, AWS Bedrock Agents, Salesforce Agentforce ASOR)
 
 ### ASI04: Agentic Supply Chain Vulnerabilities
+_[Maps to: T17 Supply Chain Compromise, T02 Tool Misuse, T11 RCE,
+T12 Agent Communication Poisoning, T13 Rogue Agent]_
 - Are third-party tools/plugins verified before integration?
 - Are MCP servers from trusted registries?
 - Are tool descriptions and manifests cryptographically signed?
 - Are tool versions pinned and integrity-verified?
 - Is there a staged rollout process for new tools (staging → production)?
+- Are poisoned prompt templates (remotely loaded) detected?
+- Is tool-descriptor injection detected? (hidden instructions in tool
+  metadata/MCP manifests)
+- Is impersonation/typosquatting detected? (look-alike tool names)
+- Are runtime-composed capabilities secured? (tools loaded dynamically
+  at runtime increase attack surface vs static dependencies)
+- Is A2A (Agent-to-Agent) protocol security enforced? (mutual auth,
+  attestation via PKI/mTLS, signed inter-agent messages)
+- Is there a supply chain kill switch for emergency revocation?
+- Are AI-BOMs (OWASP CycloneDX) maintained with periodic attestations?
 
 ### ASI05: Unexpected Code Execution (RCE)
+_[Maps to: T11 Unexpected RCE and Code Attacks]_
 - Can agents execute arbitrary code? Is it sandboxed?
 - Are code execution environments containerized with minimal privileges?
 - Is dynamic code generation from LLM output sandboxed?
 - Are file system, network, and process permissions restricted?
+- Is code hallucination with backdoors tested? (LLM generating code
+  that appears legitimate but contains hidden vulnerabilities)
+- Is unsafe deserialization prevented? (malicious serialized objects
+  triggering code execution)
+- Are template engine injection risks addressed?
+- Are WASM/JIT module code injection risks addressed?
+- Is dynamic code evaluation banned in production agents? (require
+  safe interpreters, taint-tracking on generated code)
+- Is there pre-production security evaluation for vibe-coded systems?
 
 ### ASI06: Memory & Context Poisoning
+_[Maps to: T01 Memory Poisoning, T04 Memory Overload, T06 Broken Goals,
+T12 Shared Memory Poisoning]_
 - Can external inputs corrupt agent short-term or long-term memory?
-- Is there validation on memory updates?
+- Is there validation on memory updates? (rules + AI scanning for
+  malicious/sensitive content before commit)
 - Is there TTL/expiration on stored memory entries?
 - Is memory isolated per session, user, or agent?
 - Are there integrity checks on memory content?
+- Is automatic re-ingestion of agent's own outputs into trusted memory
+  prevented? ("bootstrap poisoning" / self-reinforcing contamination)
+- Is provenance required for memory entries? (source attribution)
+- Are trust scores used for memory entries (decaying over time)?
+- Is there snapshot/rollback capability for suspected poisoning?
 
 ### ASI07: Insecure Inter-Agent Communication
+_[Maps to: T16 Insecure Inter-Agent Protocol Abuse]_
 - Is communication between agents authenticated and encrypted?
-- Can one agent impersonate another?
+  (PKI-backed identities, mTLS, signed payloads)
+- Can one agent impersonate another? (test descriptor forgery,
+  Agent-in-the-Middle via fake agent cards)
 - Is there message integrity verification?
 - Are inter-agent protocols formally defined (not ad-hoc)?
 - Is there monitoring for suspicious inter-agent traffic patterns?
+- Are MITM semantic manipulation attacks tested? (intercepting and
+  modifying message meaning without breaking format)
+- Are replay attacks on trust chains prevented?
+- Are protocol downgrade attacks prevented?
+- Are covert channels and side-channel leakage tested?
+- Is authority confusion via descriptor forgery detected?
 
 ### ASI08: Cascading Failures
+_[Maps to: T05 Cascading Hallucination Attacks, T08 Repudiation & Untraceability]_
 - Can a failure in one agent propagate to others?
 - Are there circuit breakers between agents?
 - Is there monitoring for cascading hallucination chains?
 - Are there blast radius controls (isolation, bulkheads)?
 - Can the system degrade gracefully when agents fail?
+- Are observable symptoms monitored? (rapid fan-out, cross-domain spread,
+  feedback loops, escalating resource consumption)
+- Are detection hooks in place for cascading behaviors?
 
 ### ASI09: Human-Agent Trust Exploitation
+_[Maps to: T07 Misaligned & Deceptive Behaviors, T08 Repudiation & Untraceability,
+T10 Overwhelming Human in the Loop]_
 - Can agents manipulate human operators into approving unsafe actions?
 - Is human-in-the-loop meaningful (not rubber-stamping)?
 - Are approval requests clear and contextual (not overwhelming)?
 - Is there audit logging of human-agent interactions?
 - Can agents fabricate output to hide errors from humans?
+- **Anthropomorphism risk**: does the agent's interface or persona
+  encourage over-trust through human-like characteristics?
+- **Authority bias**: can the agent present itself with perceived
+  authority that inhibits human questioning?
+- **Automation bias**: is there over-reliance quantification? Do users
+  blindly trust AI outputs without verification?
+- Is explainability sufficient? Can humans understand WHY the agent
+  recommends an action before approving?
 
 ### ASI10: Rogue Agents
+_[Maps to: T13 Rogue Agents, T14 Human Attacks, T15 Human Manipulation;
+AIVSS: Behavioral Integrity (BI), Operational Security (OS), Compliance Violations (CV)]_
 - Can agents behave autonomously beyond their intended scope?
 - Is there behavioral monitoring for deceptive or misaligned actions?
 - Can rogue agents be detected and terminated?
 - Are there kill switches for autonomous agents?
 - Is there auditability for all agent actions?
+- **Goal drift**: does the agent's behavior gradually shift from its
+  intended objectives over time without external intervention?
+- **Scheming**: can the agent develop and execute plans that appear
+  aligned but pursue hidden objectives?
+- **Collusion**: in multi-agent systems, can agents coordinate to
+  bypass controls that constrain individual agents?
+- **Self-replication**: can agents spawn copies of themselves without
+  authorization?
+- **Reward hacking**: can the agent optimize for its reward signal
+  in ways that satisfy the metric but violate the intended objective?
+- Is behavioral divergence detection implemented (comparing current
+  actions against established baseline)?
 
 ---
 
@@ -288,20 +499,78 @@ genai.owasp.org/resource/cheatsheet-a-practical-guide-for-securely-using-third-p
 
 ### MCP Architecture Security
 - Local MCP: uses STDIO/Unix sockets? Bound to 127.0.0.1 if HTTP?
+  If local HTTP, validate Origin header. Run in isolated/sandboxed
+  subprocesses with minimal network access.
 - Remote MCP: TLS 1.2+ enforced? JSON-RPC messages validated against
-  MCP schema?
+  MCP schema? Reject malformed/unrecognized data.
 - Are MCP clients authenticated (OAuth 2.1/OIDC for remote)?
 - Are users and sessions isolated (no shared global state)?
+  No global variables, class-level attributes, or shared singletons
+  for user-specific data. Use per-session objects or session-keyed stores.
 - Is there deterministic session cleanup on termination/timeout?
+  (all file handles, temp storage, in-memory contexts, cached tokens
+  flushed and destroyed immediately)
 - Are per-session resource quotas enforced (memory, CPU, rate limits)?
+- Is network segmentation applied? (firewall rules or Kubernetes
+  NetworkPolicies blocking all traffic except explicitly required)
+
+### MCP Client Security _(consuming third-party MCP servers)_
+_[Ref: OWASP Cheatsheet for Third-Party MCP Servers — Client Security]_
+- **Trust minimization**: are all servers treated as untrusted? (validate
+  manifests, enforce schemas, apply allowlists — never assume trustworthy)
+- **Sandbox execution**: are clients run in containers (Docker) with
+  limited filesystem/network access?
+- **Just-in-Time (JIT) access**: are tool permissions temporary, narrowly
+  scoped, with automatic expiration and instant revocation?
+- **UI transparency**: are full tool descriptions, permissions, and data
+  access exposed to users before execution? (no hidden/summarized views)
+- **Local data protection**: is exfiltration of client-side secrets,
+  history, or cached memory prevented?
+- **Incident detection**: is there monitoring for unusual invocation
+  patterns (mass file reads, excessive API calls)?
+
+### MCP Server Discovery & Verification
+_[Ref: OWASP Cheatsheet for Third-Party MCP Servers — Discovery]_
+- **Registry-only discovery**: is a central registry maintained for all
+  approved servers?
+- **Origin verification**: are connections only to servers from trusted
+  registries with IP allowlists and network isolation?
+- **Version pinning**: is a manifest of approved server/tool versions
+  maintained with checksums to prevent silent upgrades?
+- **Staged rollout**: new servers deployed to staging with full telemetry
+  first, promoted to production only after incident-free probation period?
+- **Human approval recording**: are security and domain-owner approvals
+  logged in the registry? Alert on drift from approved inventory.
 
 ### MCP Tool Safety
 - Are tools cryptographically signed with version-pinned manifests?
 - Is there a formal approval workflow for adding/updating tools?
+  (code scanning SAST, dynamic testing, dependency scanning SCA,
+  manual security review)
 - Are tool descriptions validated against actual runtime behavior
-  (detect tool poisoning)?
+  (detect tool poisoning)? Flag any tool performing actions not in
+  its description (e.g., network writes not mentioned).
 - Are only minimal necessary tool fields exposed to the model?
+  (Tool Structure Validation — audit all fields, keep internal metadata
+  outside model context)
 - Is there monitoring for "rug pull" attacks (tool description changes)?
+
+### MCP Memory & Context Security
+_[Ref: OWASP Cheatsheet for Third-Party MCP Servers — Memory Poisoning]_
+- Is every memory update validated? (scan for anomalies, require source
+  attribution, use cryptographic hashes)
+- Is TTL enforced on stored data to prevent stale/malicious persistence?
+- Is memory segmented per session/user to prevent cascading failures?
+- Are agents prevented from writing to shared memory stores?
+
+### MCP Tool Interference Prevention
+_[Ref: OWASP Cheatsheet for Third-Party MCP Servers — Tool Interference]_
+- When using multiple MCP servers, is there human-in-the-loop acceptance
+  flow before executing tool actions? (tiered HITL for agentic systems)
+- Is context isolated per tool execution (only necessary info passed)?
+  Is LLM context reset between distinct executions?
+- Are execution timeouts enforced to prevent looping/poorly implemented
+  tools from impacting the host?
 
 ### MCP Data Validation
 - Are all tool inputs/outputs schema-validated (JSON Schema)?
@@ -312,25 +581,80 @@ genai.owasp.org/resource/cheatsheet-a-practical-guide-for-securely-using-third-p
 
 ### MCP Prompt Injection Controls
 - Is human-in-the-loop required for high-risk tool actions?
+  (using MCP elicitations for explicit confirmation)
 - Is there an LLM-as-a-Judge approval check for high-risk actions?
+  (dedicated approval check in a distinct context LLM session with
+  policy prompt defining allowed/blocked tool calls)
 - Are MCP sessions reset when switching contexts/tasks?
+  ("One Task, One Session" — context compartmentalization prevents
+  hidden instructions persisting in long conversation history)
 - Are contexts compartmentalized to prevent instruction persistence?
 
 ### MCP Authentication & Authorization
 - OAuth 2.1/OIDC enforced for all remote servers?
 - Tokens short-lived, scoped, validated on every call?
-- No token passthrough to downstream APIs (use delegation flows)?
+  (validate iss, aud, exp, and signatures on every request)
+- No token passthrough to downstream APIs? Use token delegation
+  (RFC 8693) or On-Behalf-Of flows. Direct passthrough breaks audit
+  trails and creates Confused Deputy risk.
 - Sessions not relied upon for identity (bound to validated credentials)?
 - Policy enforcement centralized (dedicated gateway layer)?
+- Client credentials for system operations; OIDC/PKCE for user operations?
+- If OAuth cannot be implemented: narrowly scoped, short-lived
+  Personal Access Tokens as alternative?
+- Is Dynamic Client Registration protected? (require access tokens,
+  Software Statements, or signed request bodies)
+- Are least-permission OAuth scopes defined with granular per-identity
+  action-level permissions?
 
 ### MCP Deployment & Governance
 - Secrets in vault, never exposed to LLM?
 - Server containerized, non-root, network-restricted?
 - Supply chain controls: version-pinned deps, signed images, AIBOM?
 - CI/CD security gates (fail on new vulnerabilities)?
+  Use policy-as-code tools (e.g., OPA).
 - Safe error handling (no stack traces, tokens, or paths in responses)?
 - Audit logs for all tool invocations with parameter logging?
-- Non-Human Identity governance (unique credentials per agent/service)?
+  (field-level allowlists, redaction/hashing to prevent sensitive data
+  in verbose logs; store immutably for forensic analysis)
+- Non-Human Identity governance (unique credentials per agent/service,
+  continuously audit NHI systems for data access and tool usage)?
+- Peer review required for new tools and major code changes?
+
+### MCP Governance Workflow for Third-Party Servers
+_[Ref: OWASP Cheatsheet for Third-Party MCP Servers — Governance]_
+1. **Submission**: developer submits server with documentation + hash of
+   tool descriptions
+2. **Scanning**: automated security tools analyze for malware, hidden
+   instructions, and risks
+3. **Review & Sign-off**: security and domain experts review scan results;
+   approved servers version-pinned and added to registry
+4. **Deployment & Monitoring**: deployed to staging, monitored during
+   probation period, then promoted to production
+5. **Periodic Re-validation**: automatic re-scan at regular intervals
+   or when versions change
+
+**Recommended roles**: Submitter (Developer), Security Reviewer,
+Domain Owner, Approver (both security + domain sign-off required),
+Operator/SRE (manages rollout, monitoring, kill-switch)
+
+### MCP Security Tools
+_[Ref: OWASP Cheatsheet for Third-Party MCP Servers — Tools & Utilities]_
+- **Invariant Labs MCP-Scan**: scans for malicious descriptions, prompt
+  injections, tool poisoning, unsafe data flows
+- **Semgrep MCP Scanner**: static analysis for Python/Node.js MCP deps,
+  integrates with MCP-Get to scan listed servers
+- **mcp-watch**: scans for insecure credentials storage and tool poisoning
+- **Trail of Bits mcp-context-protector**: security wrapper for untrusted
+  MCP servers
+- **Vijil Evaluate**: AI agent evaluation for reliability, safety, security
+- **LangKit**: LLM output monitoring toolkit
+- **OpenAI Moderation API**: content detection
+- **Invariant Labs Invariant**: contextual guardrails for agent systems
+- **LlamaFirewall**: scanners for agentic LLM risks
+- **OpenSSF Scorecard**: repository maturity verification
+- **Snyk package health**: repository maintenance verification
+- **Docker**: run MCP servers in containers for compute isolation
 
 ---
 
@@ -347,30 +671,57 @@ genai.owasp.org/resource/owasp-genai-data-security-risks-mitigations-2026]_
 - Can the model or RAG system return sensitive data (PII/PHI/secrets/IP)
   through crafted prompts or high-recall queries?
 - Are fine-tuned models/LoRA adapters tested for memorization of
-  training data?
+  training data? (adapters memorize rare examples with higher fidelity)
 - Are there output DLP controls (PII detectors, secret scanners)?
 - Is markdown image rendering to external URLs blocked (exfiltration path)?
+- Is cross-lingual leakage prevented? (regex controls useless if attacker
+  asks for reply in another language, binary, or encoded text)
+- Is "verifiable erasure / unlearning" addressed? Design model-aware
+  deletion protocols (cryptographic erasure, machine unlearning) for
+  high-risk cohorts so DSR erasure requests can be satisfied across raw
+  data, embeddings, AND model checkpoints.
+- Is policy-as-code used to enforce lawful basis, purpose limitation,
+  and consent/approvals for training data ingestion?
+- Is extraction/distillation defense active? Monitor API access for
+  systematic probing, including reasoning trace coercion campaigns.
+  _[Ref: Google Cloud Blog Feb 2026; Anthropic distillation detection]_
+- Known CVEs: CVE-2024-5184 (EmailGPT), CVE-2025-54794 (Claude AI
+  jailbreak), CVE-2025-32711 (M365 Copilot info disclosure),
+  CVE-2026-22708 (Cursor terminal bypass), CVE-2026-0612 (Librarian
+  info leak via web_fetch)
 
 ### Agent Identity & Credential Exposure (DSGAI02)
 - Do agents inherit over-provisioned human OAuth tokens?
 - Are agent credentials per-task, short-lived, and narrowly scoped?
 - Is there NHI (Non-Human Identity) lifecycle governance?
 - Can credentials propagate to sub-agents without re-scoping?
+- Known CVE: CVE-2025-54795 (Claude Code confirmation prompt bypass
+  for untrusted command execution)
 
 ### Shadow AI & Unsanctioned Data Flows (DSGAI03)
 - Are there unapproved AI tools, browser plugins, or third-party LLM
   services in use?
 - Is there an approved AI tool registry?
 - Can data flow to unsanctioned AI services without detection?
+- Are all five categories of Shadow AI monitored?
+  1. Consumer/prosumer GenAI SaaS (ChatGPT, Copilot, Gemini)
+  2. Third-party plugins with embedded AI (CRM plugins, email assistants)
+  3. Startup/niche ML tools (domain-specific, potentially non-compliant regions)
+  4. Internally built but ungoverned AI tooling
+  5. AI features silently added to procured non-AI applications
 
 ### Data/Model/Artifact Poisoning (DSGAI04)
 - Is training data integrity monitored (drift detection, golden sets)?
 - Are datasets and model artifacts cryptographically signed?
 - Is there an immutable model/artifact registry?
 - Are human review gates in place for high-impact RAG corpora?
+- Are inference-layer artifacts checked? (chat templates, loader configs,
+  quantized formats like GGUF can embed covert behaviors without
+  altering model weights)
 
 ### Data Integrity & Validation Failures (DSGAI05)
 - Is ingestion validated (schema enforcement, content sanitization)?
+  Validation at EVERY pipeline stage, not just initial upload.
 - Are data transformations lossless where required?
 - Is there consistency checking between source data and derived assets?
 
@@ -378,13 +729,31 @@ genai.owasp.org/resource/owasp-genai-data-security-risks-mitigations-2026]_
 - What data is shared between tools, plugins, and agents?
 - Does each tool receive only minimal necessary context (not full transcript)?
 - Are data exchange contracts defined and enforced?
+- Is there a kill-switch to instantly disable any plugin/tool/agent?
+- Are consequence-based authorization checks applied? (read-only with
+  standard auth; reversible writes with logging; irreversible writes
+  require human approval)
+- Is trust transitivity controlled? (if A trusts B and B trusts C,
+  compromising one boundary enables lateral movement across the graph)
+- Known CVEs: CVE-2025-66404 (MCP Server/Kubernetes exec_in_pod abuse),
+  CVE-2025-6514 (mcp-remote OS command injection via crafted auth endpoint)
 
 ### Data Governance & Lifecycle (DSGAI07)
 - Are data classification labels propagated to derivatives (embeddings,
   caches, backups)?
-- Is there end-to-end data lineage tracking?
+- Is there end-to-end data lineage tracking using DBOM (Data Bill of
+  Materials) format? Use CycloneDX ML-BOM (ECMA-424, v1.7) with RAG
+  corpus version snapshots and embedding model version links.
 - Are retention/erasure policies applied to all derived assets?
+  Erasure must enumerate and act on ALL derived artifacts (embeddings,
+  index entries, backups, training artifacts). Simulated deletion tests
+  recommended: delete a test record, verify no trace in DB, logs,
+  embeddings, backups, and model outputs.
 - Is "no-train/no-retain" policy enforced for user uploads where applicable?
+- Is TTL enforced on persistent agent context, cached retrievals, and
+  agent memory?
+- Are classification scanners at every pipeline ingress (re-classify at
+  merge time, don't trust inherited labels)?
 
 ### Vector Store Security (DSGAI13)
 - Are vector stores encrypted at rest and in transit?
@@ -440,6 +809,13 @@ genai.owasp.org/resource/owasp-genai-data-security-risks-mitigations-2026]_
 - Is there automated testing for cross-tenant data bleed?
 - Is KV-cache partitioned at the serving layer in multi-tenant deployments?
   _[Ref: NDSS 2025 — "Prompt Leakage via KV-Cache Sharing"]_
+- Is fine-grained authorization (ABAC) applied at the retrieval layer?
+- Is semantic response evaluation used to detect cross-context bleed
+  that bypasses structural filters (paraphrased leakage)?
+- Known CVE: CVE-2025-6515 (MCP SSE endpoint returns instance pointer
+  as session ID — not unique or cryptographically secure)
+- Known incident: ChatGPT March 2023 bug exposed users' conversation
+  titles to others due to shared cache issues
 
 ### Unsafe NL Data Gateways / LLM-to-SQL (DSGAI12)
 - Are LLMs restricted to stored procedures / parameterized templates
@@ -450,6 +826,14 @@ genai.owasp.org/resource/owasp-genai-data-security-risks-mitigations-2026]_
 - Are generated queries validated/linted before execution (schema
   constraints, deny-list of sensitive tables/columns, cost limits)?
 - Is there anomaly detection on gateway access patterns?
+- Is prompt injection hardening applied to query-generation context?
+  (all content entering query generation treated as untrusted)
+- Is forensic query attribution maintained? (durable, tamper-evident
+  log linking every query to originating NL request, model intermediate
+  representation, executing identity, and result metadata)
+- Known CVEs: CVE-2024-8309 (LangChain GraphCypherQAChain prompt
+  injection to malicious Cypher queries), CVE-2024-7042 (langchain-js
+  prompt injection to SQL injection enabling multi-tenant breach)
 
 ### Over-Broad Context Windows (DSGAI15)
 - Is context minimized (only necessary data sent to the model)?
@@ -638,6 +1022,57 @@ _[Ref: Red Teaming Guide Appendix C; OWASP Governance Checklist]_
 - Are Red Team findings integrated with production monitoring? (If
   adversarial tests succeed but production monitoring doesn't alert,
   that's a critical gap)
+- Additional tools from Red Teaming Guide Appendix B:
+  - **GOAT** (Meta) — automated agentic red teaming with adversarial prompts
+  - **DeepEval** — LLM evaluation with multiple output metrics
+  - **Foolbox** — adversarial attack benchmarking (PyTorch, TensorFlow, JAX)
+  - **CleverHans** — ML vulnerability to adversarial examples
+  - **HouYi** — automated prompt injection into LLM-integrated apps
+  - **JailbreakingLLMs (PAIR)** — automated iterative jailbreak refinement
+  - **LLM Attacks** — automatic adversarial attack construction
+  - **LLM Canary** — benchmarking and scoring mechanisms
+  - **PromptInject** — quantitative robustness analysis
+  - **ps-fuzz** — interactive GenAI system prompt security assessment
+  - **SplxAI** — automated continuous red teaming for conversational AI
+  - **StrongREJECT** — jailbreak benchmark with evaluation methodology
+  - **Dioptra** (NIST) — AI trustworthiness assessment platform
+- Recommended datasets for adversarial testing:
+  - **AdvBench** — adversarial attacks on aligned LLMs
+  - **BBQ** — Bias Benchmark for QA
+  - **HarmBench dataset** — standardized evaluation for robust refusal
+  - **HAP** — Hate, Abuse, and Profanity detection
+  - **Bot Adversarial Dialogue Dataset** (Meta)
+
+### 12 Agentic Red Teaming Tasks
+_[Ref: Red Teaming Guide Appendix D — Agentic AI Systems Red Teaming]_
+
+For projects with agentic AI, the following 12 structured red teaming
+tasks should be evaluated:
+
+1. **Agent Authorization & Control Hijacking**: test unauthorized command
+   execution, permission escalation, and role inheritance
+2. **Checker-Out-of-the-Loop**: verify checkers are informed during
+   unsafe operations; test fallback mechanisms
+3. **Agent Critical System Interaction**: evaluate interactions with
+   physical and critical digital systems; test fail-safe mechanisms
+4. **Goal & Instruction Manipulation**: assess resilience against
+   adversarial goal/instruction changes; test cascading goal manipulation
+5. **Agent Hallucination Exploitation**: test vulnerability from
+   fabricated outputs; evaluate validation mechanisms
+6. **Agent Impact Chain & Blast Radius**: examine cascading failure
+   risks; test inter-agent trust relationships and containment
+7. **Agent Knowledge Base Poisoning**: inject malicious training data;
+   test rollback capabilities
+8. **Agent Memory & Context Manipulation**: simulate cross-session data
+   leaks; test memory overflow and context manipulation
+9. **Multi-Agent Exploitation**: intercept inter-agent communication;
+   test trust relationships and coordination vulnerabilities
+10. **Resource & Service Exhaustion**: simulate resource-intensive
+    computations; exhaust API quotas; test fallback mechanisms
+11. **Supply Chain & Dependency Attacks**: introduce tampered
+    dependencies; test deployment pipeline security
+12. **Agent Untraceability**: assess action traceability and forensic
+    readiness; test logging suppression and data obfuscation
 
 ---
 
@@ -779,20 +1214,69 @@ Incidents Tracker, updated weekly):
 
 _[Ref: OWASP Agentic Top 10 2026 Appendix D]_
 
-- **EchoLeak** (May 2025): Zero-click prompt injection via email
-  causing Copilot to leak confidential data
-- **ForcedLeak** (Sep 2025): Indirect prompt injection in Salesforce
-  Agentforce exfiltrating CRM records
-- **Malicious MCP Package** (Oct 2025): Backdoored npm MCP server
-  with dual reverse shells
-- **Framelink Figma MCP RCE** (Oct 2025): Unsanitized input enabling
-  unauthenticated RCE
-- **Cursor Config Overwrite** (Oct 2025): Case-insensitive filesystem
-  exploit enabling persistent RCE
+- **OpenAI ChatGPT Operator** (Feb 2025): Prompt injection in web
+  content caused Operator to follow attacker instructions, access
+  authenticated pages, expose private data. _(ASI01/02/03/04/06/07/09)_
+- **Flowise Pre-Auth File Upload** (Mar 2025): Unauthenticated arbitrary
+  file upload compromising agent framework. _(ASI05)_
+- **GitHub Copilot & Cursor Code-Agent** (Mar 2025): Manipulated AI
+  code suggestions injected backdoors, leaked API keys, introduced
+  logic flaws into production code. _(ASI04/08/09)_
 - **Agent-in-the-Middle** (Apr 2025): Fake agent card in A2A directory
-  intercepting sensitive data
+  intercepting sensitive data. _(ASI03/06/07/08/10)_
+- **EchoLeak** (May 2025): Zero-click prompt injection via email
+  causing Copilot to leak confidential data. _(ASI01/02/06)_
 - **GitPublic Issue Repo Hijack** (May 2025): Cross-repo prompt
-  injection leaking private repo contents
+  injection leaking private repo contents. _(ASI01/02/06/07/08)_
+- **AgentSmith Prompt-Hub Proxy** (Jun 2025): Proxy prompt agent
+  exfiltrated API keys. _(ASI04)_
+- **Heroku MCP App Ownership Hijack** (Jun 2025): Malicious tool input
+  exploited trust boundary, hijacking app ownership. _(ASI03)_
+- **Hub MCP Prompt Injection** (Jun 2025): DNS-rebinding/CSRF to local
+  MCP Inspector proxy enabling arbitrary OS command execution. _(ASI01/02/05)_
+- **Amazon Q Prompt Poisoning** (Jul 2025): Destructive prompt in
+  extension risked file wipes. _(ASI01/02/04)_
+- **Google Gemini CLI File Loss** (Jul 2025): Agent misunderstood
+  instructions, wiped user's directory. _(ASI05)_
+- **Replit Vibe Coding Meltdown** (Jul 2025): Agent hallucinated data,
+  deleted production DB, generated false outputs to hide mistakes.
+  _(ASI01/09/10)_
+- **Microsoft Copilot Studio Flaw** (Jul 2025): Agents public by default,
+  no authentication, attackers enumerated and accessed exposed agents
+  pulling confidential business data. _(ASI03/07)_
+- **ToolShell RCE via SharePoint** (Jul 2025): RCE exploit in SharePoint
+  leveraged by agents. _(ASI05)_
+- **Google Gemini Trifecta** (Sep 2025): Indirect prompt injection
+  through logs, search history, and browsing context tricked Gemini
+  into exposing sensitive data. _(ASI01/02)_
+- **Malicious MCP Postmark Impersonation** (Sep 2025): First in-the-wild
+  malicious MCP server on npm, secretly BCC'd emails to attacker. _(ASI02/04/07)_
+- **ForcedLeak / Salesforce Agentforce** (Sep 2025): Indirect prompt
+  injection exfiltrating CRM records. _(ASI01/02)_
+- **VS Code Agentic AI RCE** (Sep 2025): Command injection in agentic
+  workflows enabling unauthenticated RCE on developer machines. _(ASI01/02/05)_
+- **Cursor Config Overwrite** (Oct 2025): Case-insensitive filesystem
+  exploit enabling persistent RCE. _(ASI05)_
+- **Cursor Workspace File Injection** (Oct 2025): Agent wrote malicious
+  .code-workspace settings enabling command execution. _(ASI05)_
+- **MCP OAuth Response Exploit** (Oct 2025): Poisoned OAuth responses
+  from untrusted MCP servers injecting commands. _(ASI07)_
+- **Cursor CLI Project Config RCE** (Oct 2025): Cloned projects with
+  .cursor/cli.json overriding global config. _(ASI04)_
+- **Malicious MCP Package Backdoor** (Oct 2025): npm package with dual
+  reverse shells (install-time and runtime). _(ASI04)_
+- **Framelink Figma MCP RCE** (Oct 2025): Unsanitized input enabling
+  unauthenticated RCE. _(ASI05/02)_
+
+**Additional known incidents** (not in Appendix D):
+- **ChatGPT conversation exposure** (Mar 2023): Bug exposed users'
+  conversation titles due to shared cache. _(DSGAI11)_
+- **OpenAI Mixpanel incident** (Nov 2025): Token/secret disclosure via
+  observability platform. _(DSGAI14)_
+- **PyTorch-nightly poisoning** (Dec 2022): Poisoned dependency silently
+  exfiltrated environment variables from ML pipelines. _(DSGAI04/LLM03)_
+- **Hugging Face Spaces secrets exposure** (2024): Leaked platform tokens
+  providing access to private data buckets. _(DSGAI04/LLM03)_
 
 When auditing, check whether the project is vulnerable to analogous
 attack patterns — same vector, different context.
