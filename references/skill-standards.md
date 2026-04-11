@@ -166,6 +166,35 @@ guidelines (github.com/anthropics/skills).
 
 ---
 
+## 7. Security Posture (if skill uses tools, MCP, or external data)
+
+_[Ref: OWASP Practical Guide for Secure MCP Server Development v1.0;
+OWASP Cheatsheet for Securely Using Third-Party MCP Servers v1.0;
+OWASP Top 10 for Agentic Applications 2026]_
+
+### Tool & MCP Safety
+- [ ] Tools follow least privilege (no unnecessary file system, network,
+  or process access)
+- [ ] Tool inputs are validated against schemas before execution
+- [ ] No hardcoded secrets or credentials in skill files
+- [ ] External data is treated as untrusted (sanitized before use)
+- [ ] Destructive operations require explicit user confirmation
+- [ ] Shell commands use parameterized inputs (no injection via f-strings
+  or string concatenation)
+- [ ] Error messages don't expose internal paths, tokens, or stack traces
+  _[Ref: OWASP Secure MCP Server Development, Section 6]_
+
+### Agent Behavior Safety
+- [ ] Skill instructions constrain agent scope (no open-ended "do anything")
+- [ ] High-risk actions are gated behind human approval
+  _[Ref: OWASP LLM Top 10 LLM06 — Excessive Agency]_
+- [ ] Output is validated before being passed to downstream tools
+  _[Ref: OWASP LLM Top 10 LLM05 — Improper Output Handling]_
+- [ ] Skill does not instruct the agent to ignore safety guidelines
+- [ ] Rate limiting or bounded execution is considered for loops/retries
+
+---
+
 ## Compliance Summary Template
 
 | Category | Status | Issues |
@@ -176,3 +205,4 @@ guidelines (github.com/anthropics/skills).
 | Script quality (if scripts/ exists) | PASS/PARTIAL/FAIL/N/A | {specific issues} |
 | Evaluation framework (evals, assertions, baseline) | PASS/PARTIAL/FAIL | {specific issues} |
 | Progressive disclosure (tier budget, reference depth) | PASS/PARTIAL/FAIL | {specific issues} |
+| Security posture (if tools/MCP/external data) | PASS/PARTIAL/FAIL/N/A | {specific issues} |

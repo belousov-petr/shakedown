@@ -157,3 +157,51 @@ Beyond "does it run without errors" — does it produce *right* results?
 - Is the output based on current data or stale cache?
 - Are there timestamps indicating when the output was generated?
 - Could a user mistake old output for current?
+
+---
+
+## GenAI & Agentic Architecture
+
+**Conditional — only evaluate if the project uses LLMs, agents, or MCP.**
+
+_[Ref: OWASP Top 10 for Agentic Applications 2026; OWASP Secure MCP
+Server Development v1.0; OWASP GenAI Data Security 2026]_
+
+### Trust Boundary Analysis
+- Are trust boundaries clearly defined between LLM, tools, agents,
+  and external data sources?
+  _[Ref: OWASP Governance Checklist Section 3.9 — "Threat Model LLM
+  components and architecture trust boundaries"]_
+- Is the context window treated as a flat namespace with no internal
+  access control (mixing system prompts, user input, RAG results,
+  tool outputs)? What mitigations exist for this architectural reality?
+  _[Ref: OWASP GenAI Data Security 2026, "What is Data Security in
+  the GenAI Context?" — context window aggregation problem]_
+- Are control plane and data plane separable, or fused in the LLM?
+
+### Agent Topology & Coordination
+- What is the agent topology (hierarchical, mesh, hub-spoke)?
+- Are inter-agent communication protocols formally defined?
+- Is there a single coordinator or distributed decision-making?
+- Can agents be independently scaled, updated, and terminated?
+- Are delegation chains bounded (no infinite agent spawning)?
+  _[Ref: OWASP Agentic Top 10 ASI08 — Cascading Failures]_
+
+### MCP Architecture Review
+- Is MCP communication local (STDIO) or remote (Streamable HTTP)?
+- Are security controls appropriate for the communication type?
+  _[Ref: OWASP Secure MCP Server Development, Section 1]_
+- Is session state isolated per user (no global variables, no shared
+  singletons for user data)?
+- Are session lifecycle management routines deterministic (cleanup
+  on termination/disconnect/timeout)?
+
+### Context Window & Data Flow Security
+- Is data minimization enforced (only necessary data sent to the model)?
+- Are sensitive data segments isolated from untrusted user input?
+- Are RAG retrieval results filtered based on user permissions before
+  injection into the context?
+  _[Ref: OWASP GenAI Data Security DSGAI15 — Over-Broad Context Windows]_
+- Is there data lineage tracking from source → embedding → retrieval
+  → prompt → generation → logging?
+  _[Ref: OWASP GenAI Data Security DSGAI07]_

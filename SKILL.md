@@ -284,11 +284,31 @@ PASS / PARTIAL / FAIL with specific issues noted.
 ### 5.1 Security & Data Exposure
 
 See [Security Checklist](references/security-checklist.md) for the full
-list of checks covering secrets, injection, PII, supply chain, workflow
-security, and network exposure.
+list of checks organized into 8 sections:
+
+- **A. Traditional Security** — secrets, injection, PII, supply chain,
+  workflow, network, licensing
+- **B. OWASP LLM Top 10 (2025)** — prompt injection, sensitive info
+  disclosure, supply chain, data poisoning, output handling, excessive
+  agency, system prompt leakage, vector weaknesses, misinformation,
+  unbounded consumption
+- **C. OWASP Agentic Top 10 (2026)** — agent goal hijack, tool misuse,
+  identity abuse, supply chain, RCE, memory poisoning, inter-agent
+  communication, cascading failures, trust exploitation, rogue agents
+- **D. MCP Security** — architecture, tool safety, data validation,
+  prompt injection controls, authentication, deployment
+- **E. GenAI Data Security (DSGAI)** — data leakage, credential
+  exposure, shadow AI, poisoning, governance, vector stores, telemetry
+- **F. AI Governance & Compliance** — asset inventory, threat modeling,
+  regulatory compliance, TEVV
+- **G. Red Teaming Readiness** — process, coverage, tooling
+- **H. Concrete Test Procedures** — 23 detailed how-to test guides
+  with specific attack techniques and OWASP references
+
+Run sections B-G only if the project uses LLM/GenAI/agentic components.
 
 Summarize key findings here: any secrets exposed, injection risks found,
-PII handling issues, dependency vulnerabilities.
+PII handling issues, dependency vulnerabilities, LLM/agent-specific risks.
 
 ### 5.2 Logging & Observability
 

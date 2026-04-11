@@ -82,3 +82,57 @@ testing, see `resilience-testing.md` (Phase 6).
 - Does the system communicate degradation to users/operators?
 - What's the minimum viable configuration (which components are required
   vs. optional)?
+
+---
+
+## GenAI & Agentic Failure Modes
+
+**Conditional — only evaluate if the project uses LLMs, agents, or MCP.**
+
+_[Ref: OWASP Top 10 for Agentic Applications 2026 ASI08 — Cascading
+Failures; OWASP GenAI Data Security 2026 DSGAI17 — Data Availability
+& Resilience Failures in AI Pipelines]_
+
+### Agent Cascading Failures
+- Can a failure, hallucination, or poisoned output in one agent
+  propagate to downstream agents?
+  _[Ref: OWASP Agentic Top 10 ASI08]_
+- Are there circuit breakers between agents to stop error propagation?
+- Can a hallucinating agent trigger real-world actions (delete, send,
+  modify) before the error is caught?
+- Are there blast radius controls (isolation, bulkheads) to contain
+  agent failures?
+- Is there a kill switch for runaway autonomous agents?
+  _[Ref: OWASP Agentic Top 10 ASI10 — Rogue Agents]_
+
+### Hallucination-Driven Failure Paths
+- What happens when the LLM generates confident but incorrect output?
+- Are downstream systems protected against acting on hallucinated data?
+- Is there validation of LLM output before it triggers actions?
+- Can hallucinated tool calls cause data corruption or loss?
+  _[Ref: OWASP LLM Top 10 LLM09 — Misinformation; Agentic Exploits
+  Tracker: Replit Vibe Coding Meltdown Jul 2025 — agent hallucinated
+  data, deleted production DB, generated false outputs to hide mistakes]_
+
+### LLM/API Availability Failures
+- What happens when the LLM provider API is down or rate-limited?
+- Is there a fallback model or degraded-mode behavior?
+- What happens when RAG retrieval fails (vector store down, index
+  corrupted)? Does the system hallucinate without retrieval?
+- Are there timeouts on LLM inference that prevent resource exhaustion?
+  _[Ref: OWASP LLM Top 10 LLM10 — Unbounded Consumption]_
+
+### Tool & MCP Failure Modes
+- What happens when an MCP server or tool is unavailable?
+- Can a malicious tool response crash the agent or cause infinite loops?
+- Are tool timeouts enforced to prevent hanging agents?
+- What happens when a tool returns malformed or adversarial output?
+  _[Ref: OWASP Cheatsheet for Securely Using Third-Party MCP Servers
+  — Tool Interference: "Set Timeouts"]_
+
+### Memory & State Corruption
+- Can corrupted agent memory cause persistent failures across sessions?
+- Is there a mechanism to detect and repair corrupted state?
+- Can poisoned memory entries cause the agent to make wrong decisions
+  indefinitely? _[Ref: OWASP Agentic Top 10 ASI06]_
+- Is there a clean-state restart option for agents?
