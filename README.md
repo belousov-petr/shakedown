@@ -234,7 +234,7 @@ The skill itself costs ~3,500 tokens to load (the SKILL.md file). The audit outp
 
 ```
 deep-project-audit/
-├── SKILL.md                              # The skill - orchestrator (458 lines)
+├── SKILL.md                              # The skill - orchestrator (479 lines)
 ├── references/
 │   ├── architecture-quality.md           # Section 4.4: structure, MECE, algorithms, tests
 │   ├── error-resilience.md               # Section 4.5: crashes, timeouts, edge cases
@@ -263,7 +263,7 @@ deep-project-audit/
 └── LICENSE                               # CC BY 4.0
 ```
 
-The main SKILL.md is a clean orchestrator — phases, flow, output templates. All detailed checklists live in `references/` (11 files, 1,063 lines) and are loaded on demand. This keeps activation cost low while preserving depth. Each reference file includes scope boundary notes to prevent overlap.
+The main SKILL.md is a clean orchestrator — phases, flow, output templates. All detailed checklists live in `references/` (11 files, 3,202 lines) and are loaded on demand. This keeps activation cost low while preserving depth. Each reference file includes scope boundary notes to prevent overlap.
 
 ## Validation
 
@@ -289,12 +289,12 @@ If you've run this and found gaps, I'd like to hear about it. Open an issue or P
 
 ## Acknowledgments
 
-Claude Code wrote this. All of it - architecture, implementation, tests, docs. I designed the audit flow and directed the work; Claude Code did the typing. If you haven't used it, start here: [docs.anthropic.com/en/docs/claude-code/overview](https://docs.anthropic.com/en/docs/claude-code/overview).
-
-Two sources shaped what the skill actually checks for:
+Claude Code wrote this. I designed the audit flow and check structure, decided what gets audited and why, and directed the work. Claude did the typing - skill, references, tests, docs. A lot of what's here came from two places:
 
 - [Agent Skills specification](https://agentskills.io/specification). The skill is built to conform to it. Run `npx skills-ref validate .` to check your install.
-- [OWASP GenAI Security Project](https://genai.owasp.org/). Most of the checks, questions, and red-team procedures in `references/security-checklist.md` come straight from OWASP's GenAI publications - LLM Top 10, Agentic Top 10, Secure MCP, GenAI Data Security, Governance Checklist, Red Teaming Guide. If your project touches LLMs or agents, those documents are worth reading directly.
+- [OWASP GenAI Security Project](https://genai.owasp.org/). The security checks, questions, and red-team procedures in `references/security-checklist.md` come straight from OWASP's GenAI publications - LLM Top 10, Agentic Top 10, Secure MCP, GenAI Data Security, Governance Checklist, Red Teaming Guide. If your project touches LLMs or agents, those documents are worth reading directly.
+
+If you haven't used Claude Code, start here: [docs.anthropic.com/en/docs/claude-code/overview](https://docs.anthropic.com/en/docs/claude-code/overview).
 
 ## Author
 
