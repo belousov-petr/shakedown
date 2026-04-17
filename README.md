@@ -287,6 +287,15 @@ If you've run this and found gaps, I'd like to hear about it. Open an issue or P
 
 [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Use it, share it, adapt it for anything including commercial work. Just give credit.
 
+## Acknowledgments
+
+Claude Code wrote this. All of it - architecture, implementation, tests, docs. I designed the audit flow and directed the work; Claude Code did the typing. If you haven't used it, start here: [docs.anthropic.com/en/docs/claude-code/overview](https://docs.anthropic.com/en/docs/claude-code/overview).
+
+Two sources shaped what the skill actually checks for:
+
+- [Agent Skills specification](https://agentskills.io/specification). The skill is built to conform to it. Run `npx skills-ref validate .` to check your install.
+- [OWASP GenAI Security Project](https://genai.owasp.org/). Most of the checks, questions, and red-team procedures in `references/security-checklist.md` come straight from OWASP's GenAI publications - LLM Top 10, Agentic Top 10, Secure MCP, GenAI Data Security, Governance Checklist, Red Teaming Guide. If your project touches LLMs or agents, those documents are worth reading directly.
+
 ## Author
 
 Petr Belousov
