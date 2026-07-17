@@ -8,7 +8,7 @@ In 2026 the code is cheap. Writing down what you built - the tradeoffs, what's f
 
 A [Claude Code Skill](https://code.claude.com/docs/en/skills). Six phases, one report, fixes ranked by impact.
 
-I built this because I kept writing the same review prompt from scratch every time I wanted to properly look at a project. Started as a 17-agent pipeline on [Paperclip](https://github.com/paperclipai/paperclip), ended up as something that works on any project.
+I built this because I kept writing the same review prompt from scratch every time I wanted to properly look at a project. Started as a 17-agent pipeline on Paperclip, a private project of mine (now 18 agents), and ended up as something that works on any project.
 
 ![Shakedown](shakedown.png)
 
